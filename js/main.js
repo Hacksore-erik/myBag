@@ -52,7 +52,6 @@ function init() {
             searchDebounceTimer = setTimeout(function() { searchQuery = v; renderChecklistPage(); }, 150);
         });
         bind('hideDoneToggle', 'click', function() { settings.hideDone = !settings.hideDone; saveSettings(); renderChecklistPage(); });
-        bind('collapseAllBtn', 'click', collapseAllItems);
 
         // Мастер списка
         bind('wiz1NameInput', 'input', function() {
