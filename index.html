@@ -7,24 +7,25 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="myBag">
 <meta name="mobile-web-app-capable" content="yes">
-<title>myBag v2.0.4</title>
+<title>myBag v2.0.5</title>
 
-<!-- Иконка для iOS (на домашний экран) -->
+<!-- Иконки -->
 <link rel="apple-touch-icon" href="Logo.png">
 <link rel="apple-touch-icon" sizes="180x180" href="Logo.png">
 <link rel="apple-touch-icon" sizes="192x192" href="Logo.png">
 <link rel="apple-touch-icon" sizes="512x512" href="Logo.png">
-
-<!-- Иконка для Android и PWA -->
 <link rel="icon" type="image/png" sizes="192x192" href="Logo.png">
 <link rel="icon" type="image/png" sizes="512x512" href="Logo.png">
 <link rel="icon" type="image/png" href="Logo.png">
 
-<!-- PWA манифест (для полноценной иконки на Android) -->
+<!-- PWA манифест -->
 <link rel="manifest" href="manifest.json">
-
 <meta name="theme-color" content="#ff9a5a">
-<link rel="stylesheet" href="css/style.css">
+
+<!-- Стили -->
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/home.css">
+<link rel="stylesheet" href="css/modals.css">
 </head>
 <body>
 
@@ -92,10 +93,10 @@
         </div>
         <div class="stats-title">О приложении</div>
         <div class="profile-menu">
-            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.0.4</div></div>
+            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.0.5</div></div>
             <div class="profile-item" id="viewErrorLogBtn"><div class="pi-icon">🐛</div><div class="pi-label">Журнал ошибок</div><div class="pi-value" id="errorCountLabel">0</div><div class="pi-arrow">›</div></div>
         </div>
-        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.0.4</div>
+        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.0.5</div>
     </div>
 </div>
 
@@ -421,7 +422,11 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Скрипты — порядок важен! -->
 <script src="js/errors.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/utils.js"></script>
 <script src="js/app.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
