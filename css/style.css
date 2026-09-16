@@ -63,8 +63,8 @@ body.dark .tip-ring{background:conic-gradient(from 180deg,#6b8cff,#a06bff,#ff6bc
 .tip-nav-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35);transition:all .3s;cursor:pointer}
 .tip-nav-dot.active{width:24px;border-radius:100px;background:#fff}
 
-/* WIDGET */
-.main-widget{position:relative;border-radius:25px;overflow:hidden;cursor:pointer;background:var(--card-solid);box-shadow:0 16px 40px var(--shadow);display:flex;flex-direction:column;width:100%;animation:slideIn .5s ease;isolation:isolate;-webkit-transform:translateZ(0);transform:translateZ(0);-webkit-backface-visibility:hidden;backface-visibility:hidden}
+/* WIDGET — фиксы скругления */
+.main-widget{position:relative;border-radius:25px;overflow:hidden;overflow:clip;cursor:pointer;background:var(--card-solid);box-shadow:0 16px 40px var(--shadow);display:flex;flex-direction:column;width:100%;animation:slideIn .5s ease;isolation:isolate;-webkit-transform:translateZ(0);transform:translateZ(0);-webkit-backface-visibility:hidden;backface-visibility:hidden}
 .main-widget:active{transform:scale(.985)}
 @keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .widget-hero{position:relative;padding:22px 20px 40px;overflow:hidden;background:linear-gradient(135deg,var(--c1,#ffb347),var(--c2,#ff7e5f));border-radius:25px 25px 0 0;-webkit-transform:translateZ(0);transform:translateZ(0)}
