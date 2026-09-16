@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Инициализация, обработчики кнопок, запуск приложения
 // Файл: js/main.js
-// Версия: 2.0.5
+// Версия: 2.1.0
 // ============================================================
 
 function bind(id, ev, fn) { var el = $(id); if (el) { try { el.addEventListener(ev, fn); } catch (e) {} } }
@@ -52,6 +52,7 @@ function init() {
             searchDebounceTimer = setTimeout(function() { searchQuery = v; renderChecklistPage(); }, 150);
         });
         bind('hideDoneToggle', 'click', function() { settings.hideDone = !settings.hideDone; saveSettings(); renderChecklistPage(); });
+        bind('collapseAllBtn', 'click', collapseAllItems);
 
         // Мастер списка
         bind('wiz1NameInput', 'input', function() {
@@ -66,8 +67,8 @@ function init() {
         bind('wiz2BackBtn', 'click', function() { closeModal('wizardStep2'); openModal('wizardStep1'); });
 
         // Мастер типа
-        bind('twiz1NameInput', 'input', function() {
-            var nb = $('twiz1NextBtn'); if (nb) nb.disabled = !this.value.trim();
+        bind('twiz1NameInput', 'input', function()Btn {
+            var nb = $('twiz',1Next 'Btn'); if (clicknb)', nb.dis handleabled = !this.value.trim();
             updateTwiz1Preview();
         });
         bind('twiz1NextBtn', 'click', twiz1Next);
@@ -118,7 +119,7 @@ function init() {
 
         // Уведомления onboarding
         bind('notifAllowBtn', 'click', handleNotifAllow);
-        bind('notifLaterBtn', 'click', handleNotifLater);
+        bind('notifLaterNotifLater);
 
         // Категории
         bind('manageCategoriesBtn', 'click', openManageCategories);
