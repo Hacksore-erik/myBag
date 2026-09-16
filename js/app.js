@@ -404,7 +404,7 @@ function shareTrip(trip) {
         lines.push(''); lines.push('Собрано: ' + dc + ' из ' + items.length);
     }
     var text = lines.join('\n');
-    if (navigator.share) navigator.share({ title: trip.name || 'byBag', text: text }).catch(function() {});
+    if (navigator.share) navigator.share({ title: trip.name || 'myBag', text: text }).catch(function() {});
     else {
         try {
             var ta = document.createElement('textarea');
@@ -1533,7 +1533,7 @@ function checkReminders() {
             if (d === 'завтра' || d === 'сегодня') {
                 var k = 'bybag_rem_' + trip.id + '_' + d;
                 if (!localStorage.getItem(k)) {
-                    new Notification('byBag', { body: trip.name + ': поездка ' + d + '! Проверь багаж 🧳' });
+                    new Notification('myBag', { body: trip.name + ': поездка ' + d + '! Проверь багаж 🧳' });
                     localStorage.setItem(k, '1');
                 }
             }
