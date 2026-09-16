@@ -145,24 +145,66 @@ body.dark .history-item .h-badge{background:rgba(61,220,132,.15)}
 .toolbar-toggle{background:var(--card);border:1.5px solid var(--border-soft);border-radius:12px;padding:12px 14px;font-family:inherit;font-size:13px;font-weight:700;color:var(--text-2);cursor:pointer;display:flex;align-items:center;gap:6px;flex-shrink:0}
 .toolbar-toggle.active{background:linear-gradient(135deg,rgba(255,154,90,.2),rgba(255,107,138,.2));border-color:var(--accent-1);color:var(--accent-2)}
 body.dark .toolbar-toggle.active{background:linear-gradient(135deg,rgba(107,140,255,.2),rgba(160,107,255,.2))}
+
+/* Кнопка "Свернуть все" */
+.toolbar-btn{width:42px;height:42px;flex-shrink:0;border-radius:12px;border:1.5px solid var(--border-soft);background:var(--card);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s ease,background .15s ease;-webkit-tap-highlight-color:transparent;font-family:inherit;padding:0}
+.toolbar-btn:active{transform:scale(.94);background:var(--card-solid)}
+
+/* Обёртка вещи — свайп-действия */
 .check-item-wrap{position:relative;margin-bottom:8px;border-radius:16px;overflow:hidden;background:var(--card-solid);isolation:isolate}
 .check-item-actions{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding:0 20px;font-size:14px;font-weight:700;color:#fff;gap:6px;z-index:0}
 .check-item-actions.right{left:0;background:linear-gradient(135deg,#4ecb71,#38b2ac);justify-content:flex-start}
 .check-item-actions.left{right:0;background:linear-gradient(135deg,#ff6b8a,#d6336c);justify-content:flex-end}
+
+/* Базовый .check-item — компактный вид по умолчанию */
 .check-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--card-solid);border:1.5px solid var(--border-soft);border-radius:16px;cursor:pointer;position:relative;z-index:2;transition:transform .25s cubic-bezier(.4,0,.2,1);will-change:transform}
 body:not(.dark) .check-item{background:#fff}
 .check-item.checked{background:#e8f8ee !important;border-color:rgba(78,203,113,.5) !important}
 body.dark .check-item.checked{background:#1c2e26 !important;border-color:rgba(61,220,132,.4) !important}
+
+/* Компактный режим */
+.check-item.compact{padding:12px 14px;min-height:52px}
+.check-item.compact .check-body{flex:1;min-width:0}
+
+/* Кружок отметки */
 .check-circle{width:26px;height:26px;border-radius:50%;border:2px solid var(--border-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:transparent;background:var(--card-solid)}
 .check-item.checked .check-circle{background:linear-gradient(135deg,#4ecb71,#38b2ac);border-color:transparent;color:#fff;font-weight:bold}
+
+/* Тело вещи */
 .check-item .check-body{flex:1;min-width:0}
+
+/* Строка компактного вида: иконка + название + qty + стрелка */
+.check-row-main{display:flex;align-items:center;gap:8px;width:100%;min-width:0}
+.check-cat-mini{font-size:18px;line-height:1;flex-shrink:0;opacity:.9}
+.check-text{font-size:15px;color:var(--text);font-weight:600;word-break:break-word;line-height:1.3}
+.check-row-main .check-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.check-qty{flex-shrink:0;font-size:12px;font-weight:700;color:var(--text-2);background:var(--card-solid);border:1px solid var(--border-soft);padding:3px 8px;border-radius:8px;line-height:1}
+.expand-arrow{flex-shrink:0;font-size:20px;font-weight:400;color:var(--text-3);line-height:1;width:16px;text-align:center;transition:transform .2s ease}
 .check-item.checked .check-text{text-decoration:line-through;color:var(--text-3)}
-.check-text{font-size:15px;color:var(--text);font-weight:500;word-break:break-word}
-.check-note{font-size:11.5px;color:var(--text-3);margin-top:2px;font-style:italic;font-weight:500}
-.check-from{font-size:10px;color:var(--text-3);margin-top:2px;font-weight:600;opacity:.7}
+.check-item.checked .check-cat-mini,.check-item.checked .check-qty{opacity:.5}
+
+/* Развёрнутый вид */
+.check-item.expanded{display:block;padding:12px 14px;animation:expandIn .22s cubic-bezier(.4,0,.2,1)}
+@keyframes expandIn{from{opacity:.7;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.check-item.expanded > .check-circle{display:inline-flex;vertical-align:top;margin-right:12px;margin-top:2px}
+.check-item.expanded > .check-body{display:inline-block;width:calc(100% - 44px);vertical-align:top}
+
+/* Дополнительные строки в развёрнутом виде */
+.check-note{margin-top:6px;font-size:13px;color:var(--text-2);font-style:italic;font-weight:500;line-height:1.4;padding-left:2px}
+.check-cat-line{margin-top:4px;font-size:12.5px;color:var(--text-3);font-weight:600;padding-left:2px}
+.check-from{font-size:12px;color:var(--text-3);margin-top:4px;font-weight:600;opacity:.8;padding-left:2px}
+
+/* Блок действий в развёрнутом виде */
+.check-actions{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border-soft)}
 .qty-stepper{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .qty-btn{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--border-soft);background:var(--card-solid);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;line-height:1;padding:0}
 .qty-val{font-size:13px;font-weight:700;color:var(--text);min-width:16px;text-align:center}
+.check-action-btn{height:36px;padding:0 14px;border-radius:10px;border:none;font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent;transition:transform .12s ease,opacity .15s ease;font-family:inherit}
+.check-action-btn:active{transform:scale(.95)}
+.check-action-btn.edit{flex:1;background:var(--card-solid);border:1.5px solid var(--border-soft);color:var(--text)}
+.check-action-btn.del{background:rgba(214,51,108,.12);color:#d6336c;padding:0 12px;font-size:16px}
+body.dark .check-action-btn.del{background:rgba(255,107,139,.18);color:#ff6b8b}
+
 .search-highlight{background:rgba(255,210,90,.6);border-radius:3px;padding:0 2px}
 body.dark .search-highlight{background:rgba(255,210,90,.4);color:#fff}
 .empty-search{text-align:center;padding:40px 20px;color:var(--text-3);font-size:14px;font-weight:500}
