@@ -4,6 +4,15 @@
 // Версия: 2.0.5
 // ============================================================
 
+// ============ CSS для пасхалки ============
+(function injectHeartCSS() {
+    if (document.getElementById('heartCSS')) return;
+    var style = document.createElement('style');
+    style.id = 'heartCSS';
+    style.textContent = '@keyframes heartFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0.3; } }';
+    document.head.appendChild(style);
+})();
+
 // ============ СОВЕТЫ ============
 function buildTips() {
     try {
@@ -1035,6 +1044,15 @@ function renderChecklistPage() {
             groups[k].forEach(function(v) { sec.appendChild(buildSwipeItem(v.item, v.idx)); });
             cont.appendChild(sec);
         });
+
+        // ============ ПАСХАЛКА: ЛЮБОВЬ ============
+        if (q === 'любовь' || q === 'love' || q === 'люблю' || q === 'love you') {
+            if (!window._loveTriggered) {
+                window._loveTriggered = true;
+                setTimeout(function() { fireHearts(); }, 100);
+                setTimeout(function() { window._loveTriggered = false; }, 8000);
+            }
+        }
     } catch (e) { bbLogError(3004, 'Ошибка рендера чеклиста', { stack: e.stack }); }
 }
 function buildSwipeItem(item, idx) {
@@ -1241,7 +1259,7 @@ function closeAddItemModal() {
     var overlay = $('addItemModal'); if (overlay) overlay.classList.remove('above-checklist');
 }
 
-// ============ КОНФЕТТИ ============
+// ============ КОНФЕТТИ И ПАСХАЛКА ============
 function fireConfetti() {
     var colors = settings.dark ? ['#6b8cff','#a06bff','#3ddc84','#ff6bcb','#ffd166'] : ['#ff9a5a','#ff6b8a','#4ecb71','#c084fc','#ffd166'];
     for (var i = 0; i < 60; i++) {
@@ -1258,6 +1276,32 @@ function fireConfetti() {
             setTimeout(function() { c.remove(); }, 3500);
         })();
     }
+}
+
+function fireHearts() {
+    var hearts = ['❤️','💖','💕','💗','💓','💞','💘','💝','🩷','💜','🧡','💛'];
+    var count = 120;
+    for (var i = 0; i < count; i++) {
+        (function(i) {
+            var delay = i * 30;
+            setTimeout(function() {
+                var h = document.createElement('div');
+                h.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+                h.style.position = 'fixed';
+                h.style.zIndex = '9999';
+                h.style.pointerEvents = 'none';
+                h.style.userSelect = 'none';
+                h.style.left = (Math.random() * 100) + 'vw';
+                h.style.top = '-60px';
+                h.style.fontSize = (Math.random() * 30 + 22) + 'px';
+                h.style.animation = 'heartFall ' + (3 + Math.random() * 2) + 's linear forwards';
+                document.body.appendChild(h);
+                setTimeout(function() { h.remove(); }, 5500);
+            }, delay);
+        })(i);
+    }
+    vibrateStrong();
+    showToast('❤️ Любовь повсюду! ❤️');
 }
 
 // ============ ПРОФИЛЬ ============
