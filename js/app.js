@@ -1,8 +1,48 @@
 // ============================================================
 // myBag — Логика приложения и рендер всех экранов
 // Файл: js/app.js
-// Версия: 2.0.5
+// Версия: 2.1.0
 // ============================================================
+
+// ============ СОСТОЯНИЕ АККОРДЕОНА ============
+var editingItemIdx = null;
+
+function getExpandedItems() {
+    try {
+        var trip = getCurrentTrip();
+        if (!trip) return [];
+        var raw = sessionStorage.getItem('bybag_expanded_' + trip.id);
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+}
+
+function saveExpandedItems(arr) {
+    try {
+        var trip = getCurrentTrip();
+        if (!trip) return;
+        sessionStorage.setItem('bybag_expanded_' + trip.id, JSON.stringify(arr));
+    } catch (e) {}
+}
+
+function toggleItemExpand(idx) {
+    var arr = getExpandedItems();
+    var pos = arr.indexOf(idx);
+    if (pos === -1) arr.push(idx);
+    else arr.splice(pos, 1);
+    saveExpandedItems(arr);
+    vibrate();
+    renderChecklistPage();
+}
+
+function collapseAllItems() {
+    saveExpandedItems([]);
+    vibrate();
+    renderChecklistPage();
+}
+
+function isItemExpanded(idx) {
+    return getExpandedItems().indexOf(idx) !== -1;
+}
 
 // ============ СОВЕТЫ ============
 function buildTips() {
@@ -1000,6 +1040,13 @@ function renderChecklistPage() {
         var f = $('tripProgressFill');
         if (f) { f.style.width = s.percent + '%'; f.classList.toggle('complete', s.percent === 100 && s.total > 0); }
         var tg = $('hideDoneToggle'); if (tg) tg.classList.toggle('active', !!settings.hideDone);
+
+        var cb = $('collapseAllBtn');
+        if (cb) {
+            var hasExpanded = getExpandedItems().length > 0;
+            cb.style.display = hasExpanded ? 'inline-flex' : 'none';
+        }
+
         var cont = $('checklistContainer'); if (!cont) return;
         cont.innerHTML = '';
         var q = searchQuery.toLowerCase().trim();
@@ -1077,6 +1124,9 @@ function deleteActiveItem(idx) {
         var trip = getCurrentTrip();
         if (!trip || !trip.items[idx]) return;
         trip.items.splice(idx, 1);
+        var exp = getExpandedItems();
+        exp = exp.filter(function(i) { return i !== idx; }).map(function(i) { return i > idx ? i - 1 : i; });
+        saveExpandedItems(exp);
         saveActive(); vibrate();
         renderChecklistPage(); renderHome(); renderProfile();
         showToast('Удалено');
@@ -1084,31 +1134,72 @@ function deleteActiveItem(idx) {
 }
 function buildCheckItem(item, idx) {
     var div = document.createElement('div');
-    div.className = 'check-item' + (item.done ? ' checked' : '');
+    var expanded = isItemExpanded(idx);
+    div.className = 'check-item' + (item.done ? ' checked' : '') + (expanded ? ' expanded' : ' compact');
+
     var c = document.createElement('div');
     c.className = 'check-circle'; c.textContent = '✓';
     c.addEventListener('click', function(e) { e.stopPropagation(); toggleItem(idx); });
+    div.appendChild(c);
+
     var b = document.createElement('div');
     b.className = 'check-body';
-    var fromLine = item.from ? '<div class="check-from">из «' + escapeHtml(item.from) + '»</div>' : '';
-    b.innerHTML = '<div class="check-text">' + highlight(item.text) + '</div>' + (item.note ? '<div class="check-note">' + escapeHtml(item.note) + '</div>' : '') + fromLine;
-    b.addEventListener('click', function() { toggleItem(idx); });
-    div.appendChild(c); div.appendChild(b);
-    var st = document.createElement('div');
-    st.className = 'qty-stepper';
-    var m = document.createElement('button');
-    m.type = 'button'; m.className = 'qty-btn'; m.textContent = '−';
-    m.addEventListener('click', function(e) {
-        e.stopPropagation();
-        if (item.qty > 1) { item.qty--; saveActive(); renderChecklistPage(); renderHome(); }
-    });
-    var v = document.createElement('div');
-    v.className = 'qty-val'; v.textContent = item.qty || 1;
-    var p = document.createElement('button');
-    p.type = 'button'; p.className = 'qty-btn'; p.textContent = '+';
-    p.addEventListener('click', function(e) { e.stopPropagation(); item.qty = (item.qty || 1) + 1; saveActive(); renderChecklistPage(); renderHome(); });
-    st.appendChild(m); st.appendChild(v); st.appendChild(p);
-    div.appendChild(st);
+    var arrow = expanded ? '⌄' : '›';
+    var qtyBadge = (item.qty && item.qty > 1) ? '<span class="check-qty">×' + item.qty + '</span>' : '';
+    var allCats = getAllCategories();
+    var catIcon = '<span class="check-cat-mini">' + (allCats[item.category] ? allCats[item.category].icon : '📦') + '</span>';
+    var noteLine = (expanded && item.note) ? '<div class="check-note">📝 ' + escapeHtml(item.note) + '</div>' : '';
+    var catLine = expanded ? '<div class="check-cat-line">📁 ' + escapeHtml((allCats[item.category] || { name: 'Разное' }).name) + '</div>' : '';
+    var fromLine = (expanded && item.from) ? '<div class="check-from">из «' + escapeHtml(item.from) + '»</div>' : '';
+    b.innerHTML =
+        '<div class="check-row-main">' +
+            catIcon +
+            '<span class="check-text">' + highlight(item.text) + '</span>' +
+            qtyBadge +
+            '<span class="expand-arrow">' + arrow + '</span>' +
+        '</div>' +
+        noteLine +
+        catLine +
+        fromLine;
+    b.addEventListener('click', function() { toggleItemExpand(idx); });
+    div.appendChild(b);
+
+    if (expanded) {
+        var actions = document.createElement('div');
+        actions.className = 'check-actions';
+        actions.addEventListener('click', function(e) { e.stopPropagation(); });
+
+        var st = document.createElement('div');
+        st.className = 'qty-stepper';
+        var m = document.createElement('button');
+        m.type = 'button'; m.className = 'qty-btn'; m.textContent = '−';
+        m.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (item.qty > 1) { item.qty--; saveActive(); renderChecklistPage(); renderHome(); }
+        });
+        var v = document.createElement('div');
+        v.className = 'qty-val'; v.textContent = item.qty || 1;
+        var p = document.createElement('button');
+        p.type = 'button'; p.className = 'qty-btn'; p.textContent = '+';
+        p.addEventListener('click', function(e) { e.stopPropagation(); item.qty = (item.qty || 1) + 1; saveActive(); renderChecklistPage(); renderHome(); });
+        st.appendChild(m); st.appendChild(v); st.appendChild(p);
+
+        var editBtn = document.createElement('button');
+        editBtn.type = 'button'; editBtn.className = 'check-action-btn edit';
+        editBtn.innerHTML = '✎ Править';
+        editBtn.addEventListener('click', function(e) { e.stopPropagation(); openEditItemModal(idx); });
+
+        var delBtn = document.createElement('button');
+        delBtn.type = 'button'; delBtn.className = 'check-action-btn del';
+        delBtn.innerHTML = '🗑';
+        delBtn.addEventListener('click', function(e) { e.stopPropagation(); deleteActiveItem(idx); });
+
+        actions.appendChild(st);
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+        div.appendChild(actions);
+    }
+
     return div;
 }
 function highlight(text) {
@@ -1209,12 +1300,30 @@ function renderWeather(data) {
 
 // ============ ДОБАВЛЕНИЕ ВЕЩИ ============
 function openAddItemModal() {
+    editingItemIdx = null;
     var trip = getCurrentTrip();
     if (!trip) { showToast('Нет активной поездки'); return; }
     ['Name','Note'].forEach(function(f) { var el = $('addItem' + f); if (el) el.value = ''; });
     var q = $('addItemQty'); if (q) q.value = '1';
     var s = $('addItemCat');
     if (s) fillCategorySelect(s, 'other');
+    var t = $('addItemModalTitle'); if (t) t.textContent = 'Добавить вещь';
+    var btn = $('addItemSaveBtn'); if (btn) btn.textContent = 'Добавить';
+    var overlay = $('addItemModal'); if (overlay) overlay.classList.add('above-checklist');
+    openModal('addItemModal');
+}
+function openEditItemModal(idx) {
+    var trip = getCurrentTrip();
+    if (!trip || !trip.items[idx]) return;
+    var item = trip.items[idx];
+    editingItemIdx = idx;
+    var n = $('addItemName'); if (n) n.value = item.text || '';
+    var q = $('addItemQty'); if (q) q.value = item.qty || 1;
+    var no = $('addItemNote'); if (no) no.value = item.note || '';
+    var s = $('addItemCat');
+    if (s) fillCategorySelect(s, item.category || 'other');
+    var t = $('addItemModalTitle'); if (t) t.textContent = 'Править вещь';
+    var btn = $('addItemSaveBtn'); if (btn) btn.textContent = 'Сохранить';
     var overlay = $('addItemModal'); if (overlay) overlay.classList.add('above-checklist');
     openModal('addItemModal');
 }
@@ -1224,19 +1333,37 @@ function confirmAddItem() {
         if (!trip) return;
         var n = (($('addItemName') || {}).value || '').trim();
         if (!n) { showToast('Введите название'); return; }
-        trip.items.push({
-            text: n, done: false,
+        var data = {
+            text: n,
             qty: parseInt($('addItemQty').value) || 1,
             note: (($('addItemNote') || {}).value || '').trim(),
-            category: ($('addItemCat') || {}).value || 'other', from: ''
-        });
-        saveActive();
-        closeAddItemModal();
-        renderChecklistPage(); renderHome(); vibrate();
-        showToast('Вещь добавлена!');
-    } catch (e) { bbLogError(7004, 'Ошибка добавления вещи', { stack: e.stack }); }
+            category: ($('addItemCat') || {}).value || 'other'
+        };
+        if (editingItemIdx !== null && trip.items[editingItemIdx]) {
+            var old = trip.items[editingItemIdx];
+            old.text = data.text;
+            old.qty = data.qty;
+            old.note = data.note;
+            old.category = data.category;
+            saveActive();
+            closeAddItemModal();
+            renderChecklistPage(); renderHome(); vibrate();
+            showToast('Сохранено');
+        } else {
+            data.done = false;
+            data.from = '';
+            trip.items.push(data);
+            saveActive();
+            closeAddItemModal();
+            renderChecklistPage(); renderHome(); vibrate();
+            showToast('Вещь добавлена!');
+        }
+    } catch (e) { bbLogError(7004, 'Ошибка добавления/правки вещи', { stack: e.stack }); }
 }
 function closeAddItemModal() {
+    editingItemIdx = null;
+    var t = $('addItemModalTitle'); if (t) t.textContent = 'Добавить вещь';
+    var btn = $('addItemSaveBtn'); if (btn) btn.textContent = 'Добавить';
     closeModal('addItemModal');
     var overlay = $('addItemModal'); if (overlay) overlay.classList.remove('above-checklist');
 }
