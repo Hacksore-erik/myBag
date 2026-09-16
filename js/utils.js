@@ -1,179 +1,303 @@
 // ============================================================
-// myBag — Все константы приложения
-// Файл: js/constants.js
+// myBag — Утилиты, storage, состояние, шина window.byBag
+// Файл: js/utils.js
 // Версия: 2.0.5
 // ============================================================
 
-var BB_VERSION = '2.0.5';
-var MAX_ACTIVE_TRIPS = 2;
-var SWIPE_THRESHOLD = 0.2;
-var SWIPE_ITEM_THRESHOLD = 70;
-var WEATHER_CACHE_TTL = 1800000;
-var VIEWED_WHATS_NEW_KEY = 'bybag_viewed_whats_new_version';
+// ============ СОСТОЯНИЕ ============
+var customTypes = {};
+var customTripTypes = {};
+var customCategories = {};
+var activeTrips = [], history = [];
+var currentTripIndex = 0, selectedType = null, selectedListIds = [];
+var profile = { name: 'Эрик', avatar: null };
+var settings = { dark: false, notif: true, vibrate: true, hideDone: false };
+var achievementsState = {}, viewedTips = {}, viewedWhatsNew = false;
+var wiz = { name: '', emoji: '👕', colorIdx: 0, items: [] };
+var twiz = { name: '', emoji: '🏖️', colorIdx: 0, items: [] };
+var editing = { id: null, name: '', emoji: '👕', colorIdx: 0, items: [] };
+var advTarget = 'wizard';
+var searchQuery = '', weatherCache = {}, searchDebounceTimer = null, currentOnbSlide = 0;
+var currentTipIdx = 0, pendingCategoryTarget = null, categoryParent = null;
+var tipsMode = 'cat';
+var allCategoriesCache = null;
 
-var CATEGORIES = {
-    clothes: { name: 'Одежда', icon: '👕' },
-    documents: { name: 'Документы', icon: '📄' },
-    tech: { name: 'Техника', icon: '📱' },
-    hygiene: { name: 'Гигиена', icon: '🧴' },
-    meds: { name: 'Аптека', icon: '💊' },
-    other: { name: 'Прочее', icon: '📦' }
+// ============ УТИЛИТЫ ============
+function $(id) { try { return document.getElementById(id); } catch (e) { return null; } }
+
+function escapeHtml(s) {
+    try { return String(s).replace(/[&<>"']/g, function(m) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+    catch (e) { return ''; }
+}
+
+function plural(n, one, few, many) {
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
+    return many;
+}
+
+function getType(id) { return DEFAULT_TYPES[id] || customTripTypes[id] || null; }
+
+function getAllCategories() {
+    if (allCategoriesCache) return allCategoriesCache;
+    var all = {};
+    Object.keys(CATEGORIES).forEach(function(k) { all[k] = CATEGORIES[k]; });
+    Object.keys(customCategories).forEach(function(k) { all[k] = customCategories[k]; });
+    allCategoriesCache = all;
+    return all;
+}
+
+function invalidateCategoriesCache() { allCategoriesCache = null; }
+
+function normalizeItem(i) {
+    if (!i) return { text: 'Без названия', qty: 1, note: '', category: 'other', from: '' };
+    if (typeof i === 'string') return { text: i, qty: 1, note: '', category: 'other', from: '' };
+    if (typeof i !== 'object') return { text: String(i), qty: 1, note: '', category: 'other', from: '' };
+    var allCats = getAllCategories();
+    return {
+        text: typeof i.text === 'string' ? i.text : String(i.text || 'Без названия'),
+        qty: typeof i.qty === 'number' && i.qty > 0 ? i.qty : 1,
+        note: typeof i.note === 'string' ? i.note : '',
+        category: allCats[i.category] ? i.category : 'other',
+        from: typeof i.from === 'string' ? i.from : ''
+    };
+}
+
+function vibrate() { try { if (settings.vibrate && navigator.vibrate) navigator.vibrate(8); } catch (e) {} }
+function vibrateStrong() { try { if (settings.vibrate && navigator.vibrate) navigator.vibrate([10,40,10]); } catch (e) {} }
+
+function showToast(text) {
+    var t = $('toast'); if (!t) return;
+    t.textContent = text; t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function() { t.classList.remove('show'); }, 2200);
+}
+
+function loadJSON(key, def) {
+    try { var v = localStorage.getItem(key); if (!v) return def; var p = JSON.parse(v); return p === null ? def : p; }
+    catch (e) {
+        try { localStorage.removeItem(key); } catch (e2) {}
+        bbLogError(2003, 'Повреждённые данные: ' + key, { stack: e.stack });
+        return def;
+    }
+}
+
+function saveJSON(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); }
+    catch (e) {
+        if (e.name === 'QuotaExceededError') bbLogError(2004, 'Превышена квота localStorage: ' + key, { stack: e.stack });
+        else bbLogError(2002, 'Ошибка записи localStorage: ' + key, { stack: e.stack });
+    }
+}
+
+function resetUIBlocks() {
+    try { document.body.style.overflow = ''; document.body.style.position = ''; document.body.style.top = ''; document.body.style.width = ''; } catch (e) {}
+}
+
+function closeAllModals() {
+    try { document.querySelectorAll('.modal-overlay').forEach(function(m) { m.classList.remove('active'); m.classList.remove('above-checklist'); m.classList.remove('on-top2'); }); } catch (e) {}
+}
+
+function getCurrentTrip() {
+    if (!activeTrips || !activeTrips.length) return null;
+    if (currentTripIndex >= activeTrips.length) return null;
+    return activeTrips[currentTripIndex];
+}
+
+function openModal(id) { resetUIBlocks(); var el = $(id); if (el) el.classList.add('active'); }
+function closeModal(id) { var el = $(id); if (el) { el.classList.remove('active'); el.classList.remove('on-top2'); } resetUIBlocks(); }
+
+// ============ РАБОТА С ДАННЫМИ ============
+function migrateListColors() {
+    Object.keys(customTypes).forEach(function(k) {
+        var t = customTypes[k];
+        var found = false;
+        for (var i = 0; i < LIST_COLOR_PALETTES.length; i++) {
+            if (LIST_COLOR_PALETTES[i].c1 === t.c1 && LIST_COLOR_PALETTES[i].c2 === t.c2) { found = true; break; }
+        }
+        if (!found) {
+            t.c1 = LIST_COLOR_PALETTES[0].c1;
+            t.c2 = LIST_COLOR_PALETTES[0].c2;
+            t.ring = LIST_COLOR_PALETTES[0].ring;
+        }
+    });
+    saveCustomTypes();
+}
+
+function loadData() {
+    activeTrips = loadJSON('bybag_active_trips', []);
+    if (!Array.isArray(activeTrips)) activeTrips = [];
+    history = loadJSON('bybag_history', []);
+    customTypes = loadJSON('bybag_custom_types', {});
+    customTripTypes = loadJSON('bybag_custom_trip_types', {});
+    customCategories = loadJSON('bybag_custom_categories', {});
+    profile = loadJSON('bybag_profile', { name: 'Эрик', avatar: null });
+    settings = loadJSON('bybag_settings', { dark: false, notif: true, vibrate: true, hideDone: false });
+    achievementsState = loadJSON('bybag_achievements', {});
+    viewedTips = loadJSON('bybag_viewed_tips', {});
+    var viewedVersion = loadJSON(VIEWED_WHATS_NEW_KEY, '');
+    viewedWhatsNew = (viewedVersion === BB_VERSION);
+
+    try { localStorage.removeItem('bybag_viewed_whats_new'); } catch (e) {}
+
+    if (!Array.isArray(history)) history = [];
+    if (typeof customTypes !== 'object' || customTypes === null || Array.isArray(customTypes)) customTypes = {};
+    if (typeof customTripTypes !== 'object' || customTripTypes === null || Array.isArray(customTripTypes)) customTripTypes = {};
+    if (typeof customCategories !== 'object' || customCategories === null || Array.isArray(customCategories)) customCategories = {};
+    if (typeof profile !== 'object' || profile === null) profile = { name: 'Эрик', avatar: null };
+    if (typeof settings !== 'object' || settings === null) settings = { dark: false, notif: true, vibrate: true, hideDone: false };
+    if (typeof achievementsState !== 'object' || achievementsState === null) achievementsState = {};
+    if (typeof viewedTips !== 'object' || viewedTips === null) viewedTips = {};
+
+    activeTrips = activeTrips.filter(function(t) { return t && typeof t === 'object'; });
+    activeTrips.forEach(function(t) {
+        if (!Array.isArray(t.items)) t.items = [];
+        t.items = t.items.map(normalizeItem);
+        if (!t.daysCount) t.daysCount = 3;
+    });
+    if (activeTrips.length > MAX_ACTIVE_TRIPS) activeTrips = activeTrips.slice(0, MAX_ACTIVE_TRIPS);
+    if (currentTripIndex >= activeTrips.length) currentTripIndex = 0;
+
+    Object.keys(customTypes).forEach(function(k) {
+        var t = customTypes[k];
+        if (!t || typeof t !== 'object') { delete customTypes[k]; return; }
+        if (!Array.isArray(t.items)) t.items = [];
+        t.items = t.items.map(normalizeItem);
+        t.name = t.name || 'Свой список';
+        t.emoji = t.emoji || '👕';
+        t.c1 = t.c1 || LIST_COLOR_PALETTES[0].c1;
+        t.c2 = t.c2 || LIST_COLOR_PALETTES[0].c2;
+        t.ring = t.ring || LIST_COLOR_PALETTES[0].ring;
+    });
+    migrateListColors();
+
+    Object.keys(customTripTypes).forEach(function(k) {
+        var t = customTripTypes[k];
+        if (!t || typeof t !== 'object') { delete customTripTypes[k]; return; }
+        if (!Array.isArray(t.items)) t.items = [];
+        t.items = t.items.map(normalizeItem);
+        t.name = t.name || 'Свой тип';
+        t.emoji = t.emoji || '🏖️';
+        t.c1 = t.c1 || '#ffb347';
+        t.c2 = t.c2 || '#ff7e5f';
+        t.ring = t.ring || '#ff7e5f';
+    });
+
+    Object.keys(customCategories).forEach(function(k) {
+        var c = customCategories[k];
+        if (!c || typeof c !== 'object' || !c.name) { delete customCategories[k]; return; }
+        c.icon = c.icon || '📦';
+    });
+    invalidateCategoriesCache();
+
+    history = history.filter(function(h) { return h && typeof h === 'object'; });
+    history.forEach(function(h) { if (h.fullItems && Array.isArray(h.fullItems)) h.fullItems = h.fullItems.map(normalizeItem); });
+}
+
+function saveActive() {
+    if (activeTrips && activeTrips.length > 0) saveJSON('bybag_active_trips', activeTrips);
+    else try { localStorage.removeItem('bybag_active_trips'); } catch (e) {}
+}
+function saveHistory() { saveJSON('bybag_history', history); }
+function saveProfile() { saveJSON('bybag_profile', profile); }
+function saveCustomTypes() { saveJSON('bybag_custom_types', customTypes); }
+function saveCustomTripTypes() { saveJSON('bybag_custom_trip_types', customTripTypes); }
+function saveCustomCategories() { saveJSON('bybag_custom_categories', customCategories); invalidateCategoriesCache(); }
+function saveSettings() { saveJSON('bybag_settings', settings); }
+function saveAchievements() { saveJSON('bybag_achievements', achievementsState); }
+function saveViewedTips() { saveJSON('bybag_viewed_tips', viewedTips); }
+function saveViewedWhatsNew() { saveJSON(VIEWED_WHATS_NEW_KEY, BB_VERSION); viewedWhatsNew = true; }
+
+// ============ ДАТЫ, ВРЕМЯ, СТАТИСТИКА ============
+function formatTripDate(trip) {
+    if (!trip.startDate) return trip.date || '';
+    try { return new Date(trip.startDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }); } catch (e) { return trip.date || ''; }
+}
+
+function countdown(startDate) {
+    if (!startDate) return '';
+    try {
+        var now = new Date(); now.setHours(0,0,0,0);
+        var t = new Date(startDate); t.setHours(0,0,0,0);
+        var diff = Math.round((t - now) / 86400000);
+        if (diff === 0) return 'сегодня';
+        if (diff === 1) return 'завтра';
+        if (diff === -1) return 'вчера';
+        if (diff > 1) return 'через ' + diff + ' ' + plural(diff, 'день', 'дня', 'дней');
+        return Math.abs(diff) + ' ' + plural(Math.abs(diff), 'день', 'дня', 'дней') + ' назад';
+    } catch (e) { return ''; }
+}
+
+function getTripStats(trip) {
+    var done = 0;
+    var items = (trip && trip.items) ? trip.items : [];
+    items.forEach(function(i) { if (i.done) done++; });
+    return { done: done, total: items.length, percent: items.length > 0 ? Math.round((done / items.length) * 100) : 0 };
+}
+
+function calcStats() {
+    var tt = history.length + activeTrips.length;
+    var ad = 0, pt = 0, combined = 0;
+    history.forEach(function(h) { ad += h.done || 0; if (h.total > 0 && h.done === h.total) pt++; if (h.listIds && h.listIds.length >= 2) combined++; });
+    activeTrips.forEach(function(t) {
+        var s = getTripStats(t);
+        ad += s.done;
+        if (s.total > 0 && s.done === s.total) pt++;
+        if (t.listIds && t.listIds.length >= 2) combined++;
+    });
+    return { totalTrips: tt, completedTrips: history.length, allDone: ad, perfectTrips: pt, customCount: Object.keys(customTypes).length, combinedTrips: combined };
+}
+
+function applyTheme() {
+    try {
+        document.documentElement.style.backgroundColor = settings.dark ? '#0d1220' : '#faf6f0';
+        document.body.classList.toggle('dark', !!settings.dark);
+        ['darkToggle','notifToggle','vibrateToggle'].forEach(function(id) {
+            var el = $(id);
+            if (el) el.classList.toggle('on', !!(id === 'darkToggle' ? settings.dark : id === 'notifToggle' ? settings.notif : settings.vibrate));
+        });
+    } catch (e) { bbLogError(1003, 'Ошибка темы', { stack: e.stack }); }
+}
+
+// ============ ШИНА window.byBag ============
+window.byBag = {
+    $: $,
+    escapeHtml: escapeHtml,
+    plural: plural,
+    showToast: showToast,
+    vibrate: vibrate,
+    vibrateStrong: vibrateStrong,
+    loadJSON: loadJSON,
+    saveJSON: saveJSON,
+    openModal: openModal,
+    closeModal: closeModal,
+    resetUIBlocks: resetUIBlocks,
+    closeAllModals: closeAllModals,
+    getType: getType,
+    getAllCategories: getAllCategories,
+    normalizeItem: normalizeItem,
+    getCurrentTrip: getCurrentTrip,
+    getTripStats: getTripStats,
+    calcStats: calcStats,
+    formatTripDate: formatTripDate,
+    countdown: countdown,
+    applyTheme: applyTheme,
+    saveActive: saveActive,
+    saveHistory: saveHistory,
+    saveProfile: saveProfile,
+    saveCustomTypes: saveCustomTypes,
+    saveCustomTripTypes: saveCustomTripTypes,
+    saveCustomCategories: saveCustomCategories,
+    saveSettings: saveSettings,
+    saveAchievements: saveAchievements,
+    saveViewedTips: saveViewedTips,
+    saveViewedWhatsNew: saveViewedWhatsNew,
+    getActiveTrips: function() { return activeTrips; },
+    getHistory: function() { return history; },
+    getCustomTypes: function() { return customTypes; },
+    getCustomTripTypes: function() { return customTripTypes; },
+    getCustomCategories: function() { return customCategories; },
+    getProfile: function() { return profile; },
+    getSettings: function() { return settings; }
 };
-
-var ACHIEVEMENTS = [
-    { id: 'first_trip', icon: '🏆', name: 'Первая поездка', desc: 'Создана поездка', check: function(s) { return s.totalTrips >= 1; } },
-    { id: 'perfect', icon: '🎯', name: 'Идеальный сбор', desc: 'Собрано 100%', check: function(s) { return s.perfectTrips >= 1; } },
-    { id: 'five_trips', icon: '🔥', name: 'Опытный', desc: '5 поездок', check: function(s) { return s.totalTrips >= 5; } },
-    { id: 'hundred_items', icon: '📦', name: 'Сто вещей', desc: '100 вещей собрано', check: function(s) { return s.allDone >= 100; } },
-    { id: 'custom_list', icon: '🎨', name: 'Дизайнер', desc: 'Свой список', check: function(s) { return s.customCount >= 1; } },
-    { id: 'three_perfect', icon: '⭐', name: 'Перфекционист', desc: '3 идеальных', check: function(s) { return s.perfectTrips >= 3; } },
-    { id: 'combined', icon: '🧩', name: 'Комбинатор', desc: 'Поездка с 2+ списками', check: function(s) { return s.combinedTrips >= 1; } }
-];
-
-var DEFAULT_TYPES = {
-    rest: { name: 'Отдых', emoji: '🏖️', c1: '#ffb347', c2: '#ff7e5f', ring: '#ff7e5f',
-        items: ['Купальник / плавки','Солнцезащитный крем','Солнечные очки','Пляжное полотенце','Шлёпки / сандалии','Панама / кепка','Аптечка','Powerbank','Наушники','Худи на вечер'] },
-    business: { name: 'Деловая', emoji: '💼', c1: '#c084fc', c2: '#7e5bef', ring: '#7e5bef',
-        items: ['Деловой костюм','Рубашки (2 шт.)','Ноутбук + зарядка','Визитки','Документы / паспорт','Блокнот и ручка','Туфли','Ремень','Презентация на флешке','Гель для бритья'] },
-    camping: { name: 'Поход', emoji: '🏕️', c1: '#4ecb71', c2: '#2f9c53', ring: '#2f9c53',
-        items: ['Палатка','Спальный мешок','Коврик (пенка)','Фонарик','Спички / зажигалка','Термос','Нож','Репеллент от насекомых','Дождевик','Треккинговые ботинки','Аптечка','Запас еды'] },
-    city: { name: 'Город', emoji: '🌆', c1: '#ff6b8a', c2: '#d6336c', ring: '#d6336c',
-        items: ['Удобная обувь','Рюкзак / сумка','Карта / навигатор','Powerbank','Зарядка для телефона','Дождевик / зонт','Бутылка для воды','Наушники','Аптечка','Документы'] }
-};
-
-var COLOR_PALETTES = [
-    { c1: '#ffb347', c2: '#ff7e5f', ring: '#ff7e5f' },
-    { c1: '#c084fc', c2: '#7e5bef', ring: '#7e5bef' },
-    { c1: '#4ecb71', c2: '#2f9c53', ring: '#2f9c53' },
-    { c1: '#ff6b8a', c2: '#d6336c', ring: '#d6336c' },
-    { c1: '#5ec7ff', c2: '#3a86ff', ring: '#3a86ff' },
-    { c1: '#ffd166', c2: '#f4a261', ring: '#f4a261' },
-    { c1: '#a0e7e5', c2: '#3aafa9', ring: '#3aafa9' },
-    { c1: '#ff8fab', c2: '#c94c7a', ring: '#c94c7a' },
-    { c1: '#f4a261', c2: '#8b5e3c', ring: '#8b5e3c' },
-    { c1: '#b4a0e5', c2: '#6a4c93', ring: '#6a4c93' },
-    { c1: '#ff9e7d', c2: '#e63946', ring: '#e63946' },
-    { c1: '#7ee8fa', c2: '#2c73d2', ring: '#2c73d2' }
-];
-
-var LIST_COLOR_PALETTES = [
-    { c1: '#a8e6cf', c2: '#56c596', ring: '#56c596' },
-    { c1: '#c8b6e2', c2: '#8b6fc4', ring: '#8b6fc4' },
-    { c1: '#ffd3b6', c2: '#ff9a76', ring: '#ff9a76' },
-    { c1: '#b8dff0', c2: '#5aa9d6', ring: '#5aa9d6' },
-    { c1: '#f8c8d8', c2: '#d97ba0', ring: '#d97ba0' },
-    { c1: '#ffe9b8', c2: '#f4c462', ring: '#f4c462' },
-    { c1: '#a2d5d5', c2: '#4a9d9d', ring: '#4a9d9d' },
-    { c1: '#e8b796', c2: '#c17a4e', ring: '#c17a4e' },
-    { c1: '#c9d6a3', c2: '#8ba356', ring: '#8ba356' },
-    { c1: '#d5c3e8', c2: '#9b7bc4', ring: '#9b7bc4' },
-    { c1: '#e0d5c7', c2: '#b09b82', ring: '#b09b82' },
-    { c1: '#c5cdd6', c2: '#7d8a99', ring: '#7d8a99' }
-];
-
-var LIST_EMOJI_CHOICES = ['👕','👖','👟','🧥','🎒','📱','💻','🎧','🔌','🧴','🪥','💊','🩹','🛂','📄','💳','📖','✏️','🍫','🧸'];
-var EMOJI_CHOICES = ['🎒','🧳','✈️','🚗','🏔️','🌊','🎿','🚴','🎣','🍕','🎉','💼','🏖️','🏕️','🌆','🚢','🐕','🎨','📚','🎵'];
-var CAT_EMOJI = ['📦','🍔','🎮','⚽','🎸','🐕','👶','💊','💻','🎨','📚','🚲','🎁','🧸','🛠️','🌱'];
-
-var WEATHER_CODES = {
-    0:{icon:'☀️',desc:'Ясно'},
-    1:{icon:'🌤️',desc:'Преим. ясно'},
-    2:{icon:'⛅',desc:'Переменная облачность'},
-    3:{icon:'☁️',desc:'Пасмурно'},
-    45:{icon:'🌫️',desc:'Туман'},
-    48:{icon:'🌫️',desc:'Туман с инеем'},
-    51:{icon:'🌦️',desc:'Слабая морось'},
-    53:{icon:'🌦️',desc:'Морось'},
-    55:{icon:'🌧️',desc:'Сильная морось'},
-    61:{icon:'🌧️',desc:'Небольшой дождь'},
-    63:{icon:'🌧️',desc:'Дождь'},
-    65:{icon:'🌧️',desc:'Сильный дождь'},
-    71:{icon:'🌨️',desc:'Небольшой снег'},
-    73:{icon:'🌨️',desc:'Снег'},
-    75:{icon:'❄️',desc:'Сильный снег'},
-    80:{icon:'🌦️',desc:'Ливень'},
-    81:{icon:'🌧️',desc:'Сильный ливень'},
-    82:{icon:'⛈️',desc:'Очень сильный ливень'},
-    95:{icon:'⛈️',desc:'Гроза'},
-    96:{icon:'⛈️',desc:'Гроза с градом'}
-};
-
-var WHATS_NEW = {
-    emoji: '✨',
-    title: 'Что нового',
-    subtitle: 'Обновление v2.0.5',
-    color1: '#ff9a5a', color2: '#ff6b8a',
-    items: [
-        { icon: '🗂️', title: 'Улучшенная структура кода', desc: 'Разбили на 10 файлов — обновления станут быстрее' },
-        { icon: '🎨', title: 'Фиксы скругления виджета', desc: 'Убрали белый провал в углу карточки поездки' },
-        { icon: '📱', title: 'Иконка приложения', desc: 'Теперь на домашнем экране — своя иконка' }
-    ],
-    minor: 'Внешний вид и функции не изменились'
-};
-
-var TIPS_CATEGORIES = [
-    { id: 'packing', name: 'Упаковка', emoji: '🧳', color1: '#ff9a5a', color2: '#ff6b8a', desc: 'Как упаковать чемодан',
-      tips: [
-        { icon: '👕', text: '<strong>Скручивайте одежду в рулоны</strong> — экономит место и меньше мнётся' },
-        { icon: '👟', text: '<strong>Обувь — вниз, носки внутрь.</strong> Так они не деформируются и заполняют пустоты' },
-        { icon: '🧴', text: 'Жидкости <strong>в отдельный зип-пакет</strong> + пищевая плёнка под крышку' },
-        { icon: '👖', text: '<strong>Тяжёлое — на дно</strong> (у колесиков). Так чемодан устойчив и не переворачивается' },
-        { icon: '🎒', text: 'Мелочи и провода — в <strong>маленькие мешочки</strong> по типам, чтобы не путались' },
-        { icon: '🪥', text: '<strong>Зубную щётку в колпачок</strong> — гигиеничнее и не пачкает сумку' }
-      ] },
-    { id: 'docs', name: 'Документы', emoji: '📄', color1: '#5ec7ff', color2: '#3a86ff', desc: 'Что взять из документов',
-      tips: [
-        { icon: '🛂', text: 'Паспорт + <strong>копия в отдельном месте</strong> (и фото в облаке)' },
-        { icon: '✈️', text: 'Посадочные и брони — <strong>скриншот + распечатка</strong>, в аэропорту пригодится' },
-        { icon: '💳', text: '<strong>2 разные карты</strong> в разных сумках + немного наличных' },
-        { icon: '🩺', text: 'Медстраховка для заграницы — <strong>распечатайте</strong>, иногда просят бумажный вариант' },
-        { icon: '🎫', text: 'Билеты на поезд/автобус <strong>в офлайн-доступе</strong> — сеть может пропасть' },
-        { icon: '📱', text: 'Запишите <strong>номер посольства</strong> на случай проблем за рубежом' }
-      ] },
-    { id: 'tech', name: 'Техника', emoji: '📱', color1: '#a06bff', color2: '#6b8cff', desc: 'Про гаджеты в дороге',
-      tips: [
-        { icon: '🔌', text: '<strong>Один powerbank вместо пяти зарядок.</strong> 20000 мАч хватает на 3–4 дня' },
-        { icon: '🧵', text: 'Провода <strong>скрепите резинками</strong> или в стяжки — не запутаются в сумке' },
-        { icon: '🎧', text: 'Наушники <strong>в отдельном кейсе</strong>, чтобы не поцарапать в кармане' },
-        { icon: '💻', text: 'Ноутбук — <strong>в мягкий чехол</strong>, отдельно от жидкостей и обуви' },
-        { icon: '🔋', text: '<strong>Отключите авто-синк</strong> в роуминге: телефон проживёт вдвое дольше' },
-        { icon: '🔌', text: '<strong>Универсальный переходник</strong> пригодится в любой стране' }
-      ] },
-    { id: 'clothes', name: 'Одежда', emoji: '👕', color1: '#4ecb71', color2: '#2f9c53', desc: 'Как собрать гардероб',
-      tips: [
-        { icon: '🎨', text: '<strong>Правило капсулы:</strong> 3 низа + 3 верха + 1 куртка = 9 образов' },
-        { icon: '👖', text: 'Возьмите <strong>2 пары обуви максимум</strong>: одна в дорогу, вторая в чемодан' },
-        { icon: '🧥', text: 'В холодный климат — <strong>слоями</strong>: термобельё + флиска + куртка' },
-        { icon: '🌧️', text: 'В дождь спасает <strong>компактный дождевик</strong> размером с кулак' },
-        { icon: '👕', text: 'Тёмные цвета <strong>практичнее в дороге</strong>: меньше видны пятна' },
-        { icon: '👙', text: 'Носки и нижнее бельё — <strong>+1 запасной комплект</strong> на всякий случай' }
-      ] },
-    { id: 'security', name: 'Безопасность', emoji: '🔒', color1: '#d6336c', color2: '#ff5e8a', desc: 'Как защитить имущество',
-      tips: [
-        { icon: '🎒', text: 'Рюкзак — <strong>на грудь в толпе</strong>. За спиной легко стать целью' },
-        { icon: '💰', text: 'Деньги — <strong>в 2-3 местах</strong>: кошелёк, носки, внутренний карман' },
-        { icon: '📷', text: 'Фото содержимого чемодана <strong>поможет при потере</strong> — сохраните в облако' },
-        { icon: '🔐', text: 'На чемодане — <strong>кодовый замок</strong>, не простой навесной' },
-        { icon: '📞', text: '<strong>Скиньте маршрут близким</strong>: отели, рейсы, время прилёта' },
-        { icon: '🚕', text: 'Такси только <strong>официальное</strong>, не соглашайтесь на «быстрее и дешевле»' }
-      ] },
-    { id: 'lifehacks', name: 'Лайфхаки', emoji: '💡', color1: '#ffd166', color2: '#f4a261', desc: 'Полезные мелочи',
-      tips: [
-        { icon: '🧊', text: 'Замороженная бутылка воды = <strong>и еда, и охлаждение</strong> для сумки' },
-        { icon: '🧴', text: 'Дезодорант-спрей <strong>не протечёт</strong> в отличие от роликового' },
-        { icon: '🧦', text: 'В обувь положите <strong>носки или бельё</strong> — экономия места' },
-        { icon: '🍫', text: 'Сникерс в кармане спасёт <strong>от голода в дороге</strong>, если нет кафе' },
-        { icon: '💊', text: 'Мини-аптечка: <strong>обезболивающее, пластырь, активированный уголь</strong>' },
-        { icon: '🧴', text: 'Пробники косметики <strong>вместо больших флаконов</strong>: легче и не жалко выкинуть' },
-        { icon: '📌', text: 'Булавка на молнии — <strong>быстрый «замок»</strong> от воришек в метро' },
-        { icon: '🛍️', text: 'Пустой складной мешок <strong>для сувениров</strong> занимает мало места' }
-      ] }
-];
-
-var ONBOARDING_SLIDES = [
-    {icon:'🧳',bg:'🧳',title:'Добро пожаловать в myBag',text:'Ваш личный помощник для сбора багажа и планирования поездок. Никогда не забудьте важное.'},
-    {icon:'✈️',bg:'✈️',title:'Создавайте поездки',text:'Выбирайте базовый тип + свои списки. Объединяйте до 2 активных поездок.'},
-    {icon:'👆',bg:'✅',title:'Собирайте багаж',text:'Отмечайте вещи одним касанием.',list:[{icon:'👈',text:'Свайп влево — удалить вещь'},{icon:'👉',text:'Свайп вправо — отметить или сбросить'},{icon:'🔍',text:'Поиск по списку вещей'}]},
-    {icon:'💡',bg:'💡',title:'Советы по упаковке',text:'Полезное для поездок:',list:[{icon:'🧳',text:'Как упаковать чемодан'},{icon:'📄',text:'Документы и визы'},{icon:'🔒',text:'Безопасность в дороге'},{icon:'💡',text:'Полезные лайфхаки'}]},
-    {icon:'🏆',bg:'🏆',title:'Статистика и достижения',text:'Собирайте награды, следите за прогрессом и делайте каждую поездку лучше.',list:[{icon:'🏆',text:'Достижения за поездки'},{icon:'📊',text:'Личная статистика'},{icon:'🎨',text:'Свои списки и категории'}]}
-];
