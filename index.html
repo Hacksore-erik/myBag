@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="myBag">
 <meta name="mobile-web-app-capable" content="yes">
-<title>myBag v2.0.5</title>
+<title>myBag v2.1.0</title>
 
 <link rel="apple-touch-icon" href="Logo.png">
 <link rel="apple-touch-icon" sizes="180x180" href="Logo.png">
@@ -89,10 +89,10 @@
         </div>
         <div class="stats-title">О приложении</div>
         <div class="profile-menu">
-            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.0.5</div></div>
+            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.1.0</div></div>
             <div class="profile-item" id="viewErrorLogBtn"><div class="pi-icon">🐛</div><div class="pi-label">Журнал ошибок</div><div class="pi-value" id="errorCountLabel">0</div><div class="pi-arrow">›</div></div>
         </div>
-        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.0.5</div>
+        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.1.0</div>
     </div>
 </div>
 
@@ -127,6 +127,7 @@
         </div>
         <div class="checklist-toolbar">
             <input type="text" class="input-field" id="searchInput" placeholder="🔍 Поиск по вещам...">
+            <button type="button" class="toolbar-btn" id="collapseAllBtn" style="display:none" title="Свернуть все">⌃</button>
             <button type="button" class="toolbar-toggle" id="hideDoneToggle"><span>👁</span></button>
         </div>
         <div class="checklist" id="checklistContainer"></div>
@@ -305,7 +306,7 @@
     <div class="modal">
         <button type="button" class="modal-close" data-close="addItemModal">✕</button>
         <div class="modal-handle"></div>
-        <h2>Новая вещь</h2>
+        <h2 id="addItemModalTitle">Новая вещь</h2>
         <div class="field-label">Название</div>
         <input type="text" class="input-field" id="addItemName" placeholder="Например: Зубная щётка" maxlength="60">
         <div class="field-label">Категория</div>
