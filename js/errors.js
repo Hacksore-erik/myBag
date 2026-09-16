@@ -1,13 +1,130 @@
 // ============================================================
-// myBag — Система обработки ошибок
+// myBag — Улучшенная система обработки ошибок
 // Файл: js/errors.js
-// Версия: 2.0.5
+// Версия: 2.0.5-diag
 // ============================================================
 
 var BB_VERSION = '2.0.5';
 var BB_ERROR_LOG_KEY = 'bybag_error_log';
 var BB_MAX_LOG = 30;
+var BB_LOAD_LOG = [];
 
+// ============ ЛОГ ЗАГРУЗКИ ФАЙЛОВ ============
+function bbLogLoad(filename, status, extra) {
+    try {
+        BB_LOAD_LOG.push({
+            file: filename,
+            status: status,
+            time: Date.now(),
+            extra: extra || null
+        });
+        console.log('[myBag] ' + filename + ' — ' + status + (extra ? ' — ' + extra : ''));
+    } catch (e) {}
+}
+
+// ============ ОБРАБОТЧИК ОШИБОК ЗАГРУЗКИ СКРИПТОВ ============
+window.addEventListener('error', function(e) {
+    // Ошибка загрузки ресурса (script, img, link)
+    if (e.target && e.target.tagName === 'SCRIPT') {
+        var src = e.target.src || 'unknown';
+        bbLogLoad(src, 'FAILED TO LOAD');
+        var report = '🐛 myBag — Ошибка загрузки скрипта\n\n' +
+            'Файл: ' + src + '\n' +
+            'Время: ' + new Date().toISOString() + '\n' +
+            'URL: ' + location.href + '\n\n' +
+            'Загруженные до этого файлы:\n' +
+            BB_LOAD_LOG.map(function(l) { return '  ' + l.file + ' — ' + l.status; }).join('\n');
+        try { console.error(report); } catch (ex) {}
+        var es = document.getElementById('errorScreen');
+        var em = document.getElementById('errMsg');
+        var ec = document.getElementById('errCode');
+        var et = document.getElementById('errTitle');
+        if (es) {
+            if (ec) ec.textContent = 'Код: BB-9003 · Ошибка загрузки скрипта';
+            if (et) et.textContent = 'Не загрузился скрипт: ' + src.split('/').pop();
+            if (em) em.textContent = report;
+            es.classList.add('show');
+        }
+        return true;
+    }
+
+    // Обычная JS-ошибка
+    var msg = e.message || 'Неизвестная ошибка';
+    var stack = (e.error && e.error.stack) || '';
+    bbLogLoad('window.error', msg, stack.slice(0, 200));
+    showErrorScreen(9001, msg, e.error || { message: msg, stack: stack });
+}, true);
+
+// ============ ПРОВЕРКА ЗАГРУЗКИ ВСЕХ ФАЙЛОВ ============
+function bbCheckFiles() {
+    // Все функции, которые должны быть после загрузки всех файлов
+    var expectedFunctions = {
+        'errors.js': ['bbLogError', 'bbGetErrorLog', 'showErrorScreen', 'hardReset'],
+        'constants.js': ['CATEGORIES', 'DEFAULT_TYPES', 'TIPS_CATEGORIES', 'ONBOARDING_SLIDES', 'EMOJI_CHOICES'],
+        'utils.js': ['$', 'escapeHtml', 'plural', 'showToast', 'loadJSON', 'saveJSON', 'loadData', 'getCurrentTrip', 'openModal', 'closeModal'],
+        'app.js': ['buildTips', 'renderHome', 'buildWidget', 'renderListsPage', 'renderTypeGrid', 'createTrip', 'renderChecklistPage', 'renderProfile', 'openChecklistPage', 'switchPage'],
+        'main.js': ['init', 'bind']
+    };
+
+    var results = [];
+    var missing = [];
+
+    Object.keys(expectedFunctions).forEach(function(file) {
+        var funcs = expectedFunctions[file];
+        var missingInFile = [];
+        funcs.forEach(function(fn) {
+            try {
+                var val = window[fn] || eval('typeof ' + fn);
+                if (val === 'undefined' || val === undefined) {
+                    missingInFile.push(fn);
+                }
+            } catch (e) {
+                // Попробуем через eval
+                try {
+                    if (typeof eval(fn) === 'undefined') missingInFile.push(fn);
+                } catch (e2) {
+                    missingInFile.push(fn + ' (не объявлено)');
+                }
+            }
+        });
+        if (missingInFile.length) {
+            missing.push({ file: file, missing: missingInFile });
+            results.push('❌ ' + file + ' — не хватает: ' + missingInFile.join(', '));
+        } else {
+            results.push('✅ ' + file + ' — все функции на месте');
+        }
+    });
+
+    // Проверим window.byBag
+    if (typeof window.byBag === 'undefined') {
+        results.push('❌ utils.js — window.byBag не создан (обрыв файла!)');
+        missing.push({ file: 'utils.js', missing: ['window.byBag'] });
+    } else {
+        results.push('✅ utils.js — window.byBag создан');
+    }
+
+    return { results: results, missing: missing, loadLog: BB_LOAD_LOG };
+}
+
+function bbShowDiagnostic() {
+    var diag = bbCheckFiles();
+    var report = '🔍 ДИАГНОСТИКА myBag v' + BB_VERSION + '\n\n';
+    report += '📋 Проверка файлов:\n';
+    report += diag.results.join('\n') + '\n\n';
+    report += '📥 Лог загрузки:\n';
+    diag.loadLog.forEach(function(l) {
+        report += '  ' + l.file + ' — ' + l.status + '\n';
+    });
+    if (diag.missing.length) {
+        report += '\n🚨 НАЙДЕНЫ ПРОБЛЕМЫ:\n';
+        diag.missing.forEach(function(m) {
+            report += '  ' + m.file + ': не найдено — ' + m.missing.join(', ') + '\n';
+        });
+    }
+    return report;
+}
+
+// ============ ОСНОВНАЯ СИСТЕМА ОШИБОК ============
 var BB_ERROR_NAMES = {
     1001:'Ошибка инициализации приложения', 1002:'Не удалось загрузить данные', 1003:'Не удалось применить тему',
     1004:'Не найдены обязательные элементы интерфейса',
@@ -23,7 +140,7 @@ var BB_ERROR_NAMES = {
     7001:'Ошибка отметки вещи', 7002:'Ошибка удаления вещи', 7003:'Ошибка изменения количества',
     7004:'Ошибка добавления вещи', 7005:'Ошибка поиска по списку',
     8001:'Ошибка загрузки аватара', 8002:'Ошибка профиля', 8003:'Ошибка категории', 8004:'Ошибка достижений',
-    9001:'Неизвестная ошибка', 9002:'Unhandled Promise Rejection', 9003:'Ошибка ресурса (img/script)',
+    9001:'Неизвестная ошибка', 9002:'Unhandled Promise Rejection', 9003:'Ошибка загрузки скрипта',
     9004:'Запрещённая конструкция в strict mode', 9005:'Ошибка таймера', 9006:'Ошибка внешнего API'
 };
 
@@ -116,6 +233,22 @@ function bbBuildErrorReport(code, message, err) {
         lines.push('📚 Stack trace:');
         lines.push(err.stack);
     }
+    lines.push('');
+    lines.push('📥 Лог загрузки:');
+    if (BB_LOAD_LOG.length) {
+        BB_LOAD_LOG.forEach(function(l) {
+            lines.push('  ' + l.file + ' — ' + l.status);
+        });
+    } else {
+        lines.push('  (пусто)');
+    }
+    // Диагностика функций
+    try {
+        var diag = bbCheckFiles();
+        lines.push('');
+        lines.push('🔍 Проверка функций:');
+        diag.results.forEach(function(r) { lines.push('  ' + r); });
+    } catch (e) {}
     return lines.join('\n');
 }
 
@@ -166,13 +299,14 @@ function bbDetectErrorCode(msg, stack) {
 }
 
 window.addEventListener('error', function(e) {
+    if (e.target && e.target.tagName === 'SCRIPT') return;
     var msg = e.message || 'Неизвестная ошибка';
     var stack = (e.error && e.error.stack) || '';
     var code = 9001;
     if (e.target && e.target.tagName === 'IMG') code = 9003;
     else code = bbDetectErrorCode(msg, stack);
     showErrorScreen(code, msg, e.error || { message: msg, stack: stack });
-}, true);
+});
 
 window.addEventListener('unhandledrejection', function(e) {
     var reason = e.reason || {};
@@ -206,3 +340,37 @@ function downloadErrorLog() {
         setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
     } catch (e) { alert('Не удалось скачать журнал: ' + e.message); }
 }
+
+// ============ ПОКАЗАТЬ ДИАГНОСТИКУ ============
+function bbShowDiagAlert() {
+    var report = bbShowDiagnostic();
+    try { console.log(report); } catch (e) {}
+    alert(report);
+}
+
+// Показать диагностику через 2 секунды после загрузки
+setTimeout(function() {
+    try {
+        var diag = bbCheckFiles();
+        var hasProblems = diag.missing.length > 0;
+        if (hasProblems) {
+            bbLogLoad('DIAGNOSTIC', 'PROBLEMS FOUND', JSON.stringify(diag.missing));
+            // Показываем отчёт об ошибке с диагностикой
+            var report = bbShowDiagnostic();
+            var es = document.getElementById('errorScreen');
+            var em = document.getElementById('errMsg');
+            var ec = document.getElementById('errCode');
+            var et = document.getElementById('errTitle');
+            if (es) {
+                if (ec) ec.textContent = 'Диагностика: проблемы с файлами';
+                if (et) et.textContent = 'Найдены проблемы с загрузкой файлов';
+                if (em) em.textContent = report;
+                es.classList.add('show');
+            }
+        } else {
+            bbLogLoad('DIAGNOSTIC', 'ALL OK');
+        }
+    } catch (e) {
+        console.error('diagnostic failed', e);
+    }
+}, 2000);
