@@ -43,8 +43,8 @@ body.dark .tip-ring{background:conic-gradient(from 180deg,#6b8cff,#a06bff,#ff6bc
 .tip-card:nth-child(6){animation-delay:.6s}
 @keyframes tipCardIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .tip-card-icon{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.tip-card-text{flex:1;color:#fff;font-size:14px;line-height:1.5;font-weight:500;padding-top:2px;text-shadow::0 1px 3px rgba(0,0,0700,.25)}
-.tip-card-text strong{font-weight:800;;color:#fff;display:block;margin-bottom:2pxletter;font-size:14-sp.5px}
+.tip-card-text{flex:1;color:#fff;font-size:14px;line-height:1.5;font-weight:500;padding-top:2px;text-shadow:0 1px 3px rgba(0,0,0,.25)}
+.tip-card-text strong{font-weight:800;color:#fff;display:block;margin-bottom:2px;font-size:14.5px}
 .tip-nav{display:flex;justify-content:center;gap:8px;margin-top:24px;padding-bottom:20px}
 .tip-nav-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35);transition:all .3s;cursor:pointer}
 .tip-nav-dot.active{width:24px;border-radius:100px;background:#fff}
@@ -56,7 +56,7 @@ body.dark .tip-ring{background:conic-gradient(from 180deg,#6b8cff,#a06bff,#ff6bc
 .widget-hero .bg-emoji{position:absolute;right:-10px;bottom:-26px;font-size:140px;line-height:1;opacity:.22;pointer-events:none;transform:rotate(-12deg)}
 .widget-hero::before{content:'';position:absolute;top:-48px;left:-48px;width:146px;height:146px;border-radius:50%;background:rgba(255,255,255,.15)}
 .hero-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;margin-bottom:18px}
-.hero-label{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.35);border-radius:100px;font-size:9.5px;font-weightacing:1.2px;text-transform:uppercase;color:#fff}
+.hero-label{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.35);border-radius:100px;font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff}
 .hero-label .dot{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 .hero-close{background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.35);color:#fff;width:30px;height:30px;border-radius:50%;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;padding:0}
@@ -70,14 +70,14 @@ body.dark .tip-ring{background:conic-gradient(from 180deg,#6b8cff,#a06bff,#ff6bc
 .ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
 .ring-track{fill:none;stroke:var(--border-soft);stroke-width:8}
 .ring-fill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1),stroke .4s ease}
-.ring-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.ring-percent{font-size:22px;font-weight:800;color:var(--text);line-height:1}
-.ring-percent .sign{font-size:12px;font-weight:700;color:var(--text-3)}
+.ring-center{position:absolute;inset:0;display:flex;800align-items:center;justify;-content:center}
+.ring-percent{font-size:22colorpx;font-weight:800;color:var(--text);line-height::1}
+.ring-percent .signvar{font-size:12px;font-weight:700;color:var(--text-3)}
 .widget-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
 .meta-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border-soft)}
 .meta-row:last-child{border-bottom:none;padding-bottom:0}
 .meta-row .meta-key{font-size:11px;color:var(--text-3);font-weight:600}
-.meta-row .meta-val{font-size:15.5px;font-weight:800;color:var(--text)}
+.meta-row .meta-val{font-size:15.5px;font-weight:(--text)}
 .meta-row .meta-val.done{color:var(--success)}
 .meta-row .meta-val.left{color:var(--accent-2)}
 .widget-footer{padding:0 20px 18px;background:var(--card-solid);position:relative;z-index:3}
@@ -85,9 +85,9 @@ body.dark .tip-ring{background:conic-gradient(from 180deg,#6b8cff,#a06bff,#ff6bc
 .mini-bar .fill{height:100%;border-radius:10px;transition:width .6s cubic-bezier(.4,0,.2,1)}
 .tap-hint{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--text-2);font-weight:600}
 .tap-hint .arrow{font-size:13px;color:var(--text-3)}
-.trips-carousel{position:relative;margin-bottom:8px;margin-top:6px}
+.trips-carousel{position:relative;overflow:hidden;border-radius:25px;margin-bottom:8px;margin-top:6px;isolation:isolate}
 .trips-track{display:flex;transition:transform .35s cubic-bezier(.4,0,.2,1)}
-.trips-track .main-widget{flex:0 0 100%;min-width:100%;margin:0}
+.trips-track .main-widget{flex:0 0 100%;min-width:100%;margin:0;border-radius:0}
 .trips-dots{display:flex;justify-content:center;gap:6px;padding:14px 0 0}
 .trips-dots .tdot{width:8px;height:8px;border-radius:50%;background:var(--border-soft);transition:all .25s;cursor:pointer}
 .trips-dots .tdot.active{width:24px;border-radius:100px;background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
