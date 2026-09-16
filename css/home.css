@@ -49,11 +49,10 @@ body.dark .tip-ring{background:conic-gradient(from 180deg,#6b8cff,#a06bff,#ff6bc
 .tip-nav-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35);transition:all .3s;cursor:pointer}
 .tip-nav-dot.active{width:24px;border-radius:100px;background:#fff}
 
-/* WIDGET — БЕЗ белых полос при анимации */
-.main-widget{position:relative;border-radius:25px;overflow:clip;cursor:pointer;background:var(--card-solid);box-shadow:0 16px 40px var(--shadow);display:flex;flex-direction:column;width:100%;animation:slideIn .5s ease;-webkit-mask-image:-webkit-radial-gradient(white,black);mask-image:-webkit-radial-gradient(white,black)}
+/* WIDGET — фикс белой полосы при свайпе */
+.main-widget{position:relative;border-radius:25px;overflow:hidden;cursor:pointer;background:var(--card-solid);box-shadow:0 16px 40px var(--shadow);display:flex;flex-direction:column;width:100%;-webkit-transform:translateZ(0)}
 .main-widget:active{transform:scale(.985)}
-@keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.widget-hero{position:relative;padding:22px 20px 40px;overflow:hidden;background:linear-gradient(135deg,var(--c1,#ffb347),var(--c2,#ff7e5f));border-radius:25px 25px 0 0;-webkit-mask-image:-webkit-radial-gradient(white,black);mask-image:-webkit-radial-gradient(white,black)}
+.widget-hero{position:relative;padding:22px 20px 40px;overflow:hidden;background:linear-gradient(135deg,var(--c1,#ffb347),var(--c2,#ff7e5f));border-radius:25px 25px 0 0}
 .widget-hero .bg-emoji{position:absolute;right:-10px;bottom:-26px;font-size:140px;line-height:1;opacity:.22;pointer-events:none;transform:rotate(-12deg)}
 .widget-hero::before{content:'';position:absolute;top:-48px;left:-48px;width:146px;height:146px;border-radius:50%;background:rgba(255,255,255,.15)}
 .hero-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;margin-bottom:18px}
@@ -86,9 +85,9 @@ body.dark .tip-ring{background:conic-gradient(from 180deg,#6b8cff,#a06bff,#ff6bc
 .mini-bar .fill{height:100%;border-radius:10px;transition:width .6s cubic-bezier(.4,0,.2,1)}
 .tap-hint{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--text-2);font-weight:600}
 .tap-hint .arrow{font-size:13px;color:var(--text-3)}
-.trips-carousel{position:relative;overflow:hidden;margin-bottom:8px;margin-top:6px;border-radius:25px}
-.trips-track{display:flex;transition:transform .35s cubic-bezier(.4,0,.2,1);will-change:transform}
-.trips-track .main-widget{flex:0 0 100%;margin:0;animation:none}
+.trips-carousel{position:relative;margin-bottom:8px;margin-top:6px}
+.trips-track{display:flex;transition:transform .35s cubic-bezier(.4,0,.2,1)}
+.trips-track .main-widget{flex:0 0 100%;min-width:100%;margin:0}
 .trips-dots{display:flex;justify-content:center;gap:6px;padding:14px 0 0}
 .trips-dots .tdot{width:8px;height:8px;border-radius:50%;background:var(--border-soft);transition:all .25s;cursor:pointer}
 .trips-dots .tdot.active{width:24px;border-radius:100px;background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
