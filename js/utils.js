@@ -8,7 +8,7 @@
 var customTypes = {};
 var customTripTypes = {};
 var customCategories = {};
-var activeTrips = [], history = [];
+var activeTrips = [], tripHistory = [];
 var currentTripIndex = 0, selectedType = null, selectedListIds = [];
 var profile = { name: 'Эрик', avatar: null };
 var settings = { dark: false, notif: true, vibrate: true, hideDone: false };
@@ -128,7 +128,7 @@ function migrateListColors() {
 function loadData() {
     activeTrips = loadJSON('bybag_active_trips', []);
     if (!Array.isArray(activeTrips)) activeTrips = [];
-    history = loadJSON('bybag_history', []);
+    tripHistory = loadJSON('bybag_history', []);
     customTypes = loadJSON('bybag_custom_types', {});
     customTripTypes = loadJSON('bybag_custom_trip_types', {});
     customCategories = loadJSON('bybag_custom_categories', {});
@@ -141,7 +141,7 @@ function loadData() {
 
     try { localStorage.removeItem('bybag_viewed_whats_new'); } catch (e) {}
 
-    if (!Array.isArray(history)) history = [];
+    if (!Array.isArray(tripHistory)) tripHistory = [];
     if (typeof customTypes !== 'object' || customTypes === null || Array.isArray(customTypes)) customTypes = {};
     if (typeof customTripTypes !== 'object' || customTripTypes === null || Array.isArray(customTripTypes)) customTripTypes = {};
     if (typeof customCategories !== 'object' || customCategories === null || Array.isArray(customCategories)) customCategories = {};
@@ -191,15 +191,15 @@ function loadData() {
     });
     invalidateCategoriesCache();
 
-    history = history.filter(function(h) { return h && typeof h === 'object'; });
-    history.forEach(function(h) { if (h.fullItems && Array.isArray(h.fullItems)) h.fullItems = h.fullItems.map(normalizeItem); });
+    tripHistory = tripHistory.filter(function(h) { return h && typeof h === 'object'; });
+    tripHistory.forEach(function(h) { if (h.fullItems && Array.isArray(h.fullItems)) h.fullItems = h.fullItems.map(normalizeItem); });
 }
 
 function saveActive() {
     if (activeTrips && activeTrips.length > 0) saveJSON('bybag_active_trips', activeTrips);
     else try { localStorage.removeItem('bybag_active_trips'); } catch (e) {}
 }
-function saveHistory() { saveJSON('bybag_history', history); }
+function saveHistory() { saveJSON('bybag_history', tripHistory); }
 function saveProfile() { saveJSON('bybag_profile', profile); }
 function saveCustomTypes() { saveJSON('bybag_custom_types', customTypes); }
 function saveCustomTripTypes() { saveJSON('bybag_custom_trip_types', customTripTypes); }
@@ -237,16 +237,16 @@ function getTripStats(trip) {
 }
 
 function calcStats() {
-    var tt = history.length + activeTrips.length;
+    var tt = tripHistory.length + activeTrips.length;
     var ad = 0, pt = 0, combined = 0;
-    history.forEach(function(h) { ad += h.done || 0; if (h.total > 0 && h.done === h.total) pt++; if (h.listIds && h.listIds.length >= 2) combined++; });
+    tripHistory.forEach(function(h) { ad += h.done || 0; if (h.total > 0 && h.done === h.total) pt++; if (h.listIds && h.listIds.length >= 2) combined++; });
     activeTrips.forEach(function(t) {
         var s = getTripStats(t);
         ad += s.done;
         if (s.total > 0 && s.done === s.total) pt++;
         if (t.listIds && t.listIds.length >= 2) combined++;
     });
-    return { totalTrips: tt, completedTrips: history.length, allDone: ad, perfectTrips: pt, customCount: Object.keys(customTypes).length, combinedTrips: combined };
+    return { totalTrips: tt, completedTrips: tripHistory.length, allDone: ad, perfectTrips: pt, customCount: Object.keys(customTypes).length, combinedTrips: combined };
 }
 
 function applyTheme() {
@@ -294,7 +294,7 @@ window.byBag = {
     saveViewedTips: saveViewedTips,
     saveViewedWhatsNew: saveViewedWhatsNew,
     getActiveTrips: function() { return activeTrips; },
-    getHistory: function() { return history; },
+    getHistory: function() { return tripHistory; },
     getCustomTypes: function() { return customTypes; },
     getCustomTripTypes: function() { return customTripTypes; },
     getCustomCategories: function() { return customCategories; },
