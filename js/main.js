@@ -67,8 +67,8 @@ function init() {
         bind('wiz2BackBtn', 'click', function() { closeModal('wizardStep2'); openModal('wizardStep1'); });
 
         // Мастер типа
-        bind('twiz1NameInput', 'input', function()Btn {
-            var nb = $('twiz',1Next 'Btn'); if (clicknb)', nb.dis handleabled = !this.value.trim();
+        bind('twiz1NameInput', 'input', function() {
+            var nb = $('twiz1NextBtn'); if (nb) nb.disabled = !this.value.trim();
             updateTwiz1Preview();
         });
         bind('twiz1NextBtn', 'click', twiz1Next);
@@ -119,7 +119,7 @@ function init() {
 
         // Уведомления onboarding
         bind('notifAllowBtn', 'click', handleNotifAllow);
-        bind('notifLaterNotifLater);
+        bind('notifLaterBtn', 'click', handleNotifLater);
 
         // Категории
         bind('manageCategoriesBtn', 'click', openManageCategories);
