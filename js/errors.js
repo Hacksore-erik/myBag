@@ -1,10 +1,10 @@
 // ============================================================
-// byBag — Система обработки ошибок
+// myBag — Система обработки ошибок
 // Файл: js/errors.js
-// Версия: 2.0.4
+// Версия: 2.0.5
 // ============================================================
 
-var BB_VERSION = '2.0.4';
+var BB_VERSION = '2.0.5';
 var BB_ERROR_LOG_KEY = 'bybag_error_log';
 var BB_MAX_LOG = 30;
 
@@ -30,9 +30,13 @@ var BB_ERROR_NAMES = {
 function bbGetDeviceInfo() {
     try {
         return {
-            ua: navigator.userAgent, platform: navigator.platform || 'unknown', lang: navigator.language,
+            ua: navigator.userAgent,
+            platform: navigator.platform || 'unknown',
+            lang: navigator.language,
             screen: (window.screen ? window.screen.width + 'x' + window.screen.height : '?'),
-            dpr: window.devicePixelRatio || 1, url: location.href, time: new Date().toISOString(),
+            dpr: window.devicePixelRatio || 1,
+            url: location.href,
+            time: new Date().toISOString(),
             tz: (typeof Intl !== 'undefined' && Intl.DateTimeFormat ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'unknown'),
             online: navigator.onLine
         };
@@ -61,9 +65,14 @@ function bbGetDataState() {
 function bbLogError(code, message, extra) {
     try {
         var entry = {
-            code: code, name: BB_ERROR_NAMES[code] || 'Ошибка', message: String(message || ''),
+            code: code,
+            name: BB_ERROR_NAMES[code] || 'Ошибка',
+            message: String(message || ''),
             stack: (extra && extra.stack) ? String(extra.stack).slice(0, 2000) : '',
-            device: bbGetDeviceInfo(), data: bbGetDataState(), version: BB_VERSION, ts: Date.now()
+            device: bbGetDeviceInfo(),
+            data: bbGetDataState(),
+            version: BB_VERSION,
+            ts: Date.now()
         };
         var log = [];
         try { log = JSON.parse(localStorage.getItem(BB_ERROR_LOG_KEY) || '[]'); } catch (e) { log = []; }
@@ -79,6 +88,7 @@ function bbLogError(code, message, extra) {
 function bbGetErrorLog() {
     try { return JSON.parse(localStorage.getItem(BB_ERROR_LOG_KEY) || '[]'); } catch (e) { return []; }
 }
+
 function bbClearErrorLog() {
     try { localStorage.removeItem(BB_ERROR_LOG_KEY); } catch (e) { bbLogError(2005, 'Не удалось очистить журнал'); }
     try { var lbl = document.getElementById('errorCountLabel'); if (lbl) lbl.textContent = '0'; } catch (e) {}
@@ -87,7 +97,7 @@ function bbClearErrorLog() {
 function bbBuildErrorReport(code, message, err) {
     var entry = bbLogError(code, message, { stack: err && err.stack });
     var lines = [];
-    lines.push('🐛 byBag v' + BB_VERSION + ' — отчёт об ошибке');
+    lines.push('🐛 myBag v' + BB_VERSION + ' — отчёт об ошибке');
     lines.push('');
     lines.push('Код: BB-' + code);
     lines.push('Название: ' + (BB_ERROR_NAMES[code] || '?'));
@@ -125,7 +135,7 @@ function showErrorScreen(code, message, err) {
         if (copyBtn) {
             copyBtn.onclick = function() {
                 try {
-                    if (navigator.share) { navigator.share({ title: 'byBag error', text: report }).catch(function() {}); return; }
+                    if (navigator.share) { navigator.share({ title: 'myBag error', text: report }).catch(function() {}); return; }
                     var ta = document.createElement('textarea');
                     ta.value = report; document.body.appendChild(ta); ta.select();
                     document.execCommand('copy'); document.body.removeChild(ta);
@@ -189,7 +199,7 @@ function downloadErrorLog() {
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
-        a.download = 'bybag-errors-' + Date.now() + '.json';
+        a.download = 'mybag-errors-' + Date.now() + '.json';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
