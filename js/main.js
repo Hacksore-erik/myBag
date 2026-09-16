@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Инициализация, обработчики кнопок, запуск приложения
 // Файл: js/main.js
-// Версия: 2.1.0
+// Версия: 2.3.1
 // ============================================================
 
 function bind(id, ev, fn) { var el = $(id); if (el) { try { el.addEventListener(ev, fn); } catch (e) {} } }
@@ -133,6 +133,8 @@ function init() {
         });
 
         // Категории в модалках — change обрабатывается глобально
+        // ВАЖНО: откатываем select на fallback ПЕРЕД открытием categoryModal,
+        // чтобы значение '__new__' не сохранилось, если юзер закроет модалку.
         ['advCat','adv2Cat'].forEach(function(selId) {
             var sel = $(selId);
             if (sel) sel.addEventListener('change', function() {
