@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="byBag">
+<title>byBag v2.0.4</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ff9a5a'/%3E%3Cstop offset='100%25' stop-color='%23ff6b8a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='42' fill='url(%23g)'/%3E%3Ctext x='90' y='128' font-size='100' text-anchor='middle' fill='white'%3E%F0%9F%A7%B3%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ff9a5a'/%3E%3Cstop offset='100%25' stop-color='%23ff6b8a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='42' fill='url(%23g)'/%3E%3Ctext x='90' y='128' font-size='100' text-anchor='middle' fill='white'%3E%F0%9F%A7%B3%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#ff9a5a">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="errorScreen">
+    <div class="err-icon">😕</div>
+    <div class="err-code" id="errCode">Код: BB-9001</div>
+    <h2 id="errTitle">Что-то пошло не так</h2>
+    <p>Ничего страшного — скопируйте отчёт и отправьте разработчику.</p>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:14px">
+        <button id="errCopyBtn" type="button">📋 Скопировать отчёт</button>
+        <button onclick="downloadErrorLog()" type="button" style="background:var(--card);color:var(--text)">💾 Журнал</button>
+        <button onclick="location.reload()" type="button" style="background:var(--card);color:var(--text)">🔄 Обновить</button>
+        <button onclick="hardReset()" type="button" style="background:rgba(214,51,108,.15);color:var(--danger)">🗑 Сброс</button>
+    </div>
+    <div class="err-msg" id="errMsg"></div>
+</div>
+
+<div class="app-header"><div class="logo">byBag</div></div>
+<div class="header-spacer"></div>
+
+<div class="page active" id="page-home">
+    <div class="container">
+        <div id="tipsSlot"></div>
+        <div id="widgetSlot"></div>
+        <div id="historySlot"></div>
+    </div>
+</div>
+
+<div class="page" id="page-lists">
+    <div class="container">
+        <div style="height:14px"></div>
+        <div id="listsPageContent"></div>
+        <button type="button" class="btn-primary" id="createNewListBtn" style="margin-top:8px">+ Создать новый список</button>
+    </div>
+</div>
+
+<div class="page" id="page-profile">
+    <div class="container">
+        <div class="profile-hero">
+            <div class="profile-avatar" id="profileAvatar">
+                <span id="profileAvatarLetter">Э</span>
+                <span class="avatar-edit"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
+            </div>
+            <div class="profile-info">
+                <h2 id="profileName">Эрик</h2>
+                <div class="profile-badge">⭐ Premium</div>
+            </div>
+        </div>
+        <div class="stats-title">Моя статистика</div>
+        <div class="profile-stats">
+            <div class="profile-stat-card"><div class="ps-icon">🧳</div><div class="ps-num" id="profileTotalTrips">0</div><div class="ps-label">Всего поездок</div></div>
+            <div class="profile-stat-card"><div class="ps-icon">✅</div><div class="ps-num" id="profileCompletedTrips">0</div><div class="ps-label">Завершено</div></div>
+            <div class="profile-stat-card"><div class="ps-icon">📦</div><div class="ps-num" id="profileItemsPacked">0</div><div class="ps-label">Вещей собрано</div></div>
+        </div>
+        <div class="stats-title">Достижения</div>
+        <div class="achievements-grid" id="achievementsGrid"></div>
+        <div class="stats-title">Настройки</div>
+        <div class="profile-menu">
+            <div class="profile-item" id="editProfileBtn"><div class="pi-icon">✏️</div><div class="pi-label">Редактировать профиль</div><div class="pi-arrow">›</div></div>
+            <div class="profile-item" id="manageCategoriesBtn"><div class="pi-icon">🏷️</div><div class="pi-label">Мои категории</div><div class="pi-value" id="catCountLabel">0</div><div class="pi-arrow">›</div></div>
+            <div class="profile-item" id="darkModeToggleItem"><div class="pi-icon">🌙</div><div class="pi-label">Тёмная тема</div><div class="toggle" id="darkToggle"></div></div>
+            <div class="profile-item" id="notifToggleItem"><div class="pi-icon">🔔</div><div class="pi-label">Напоминания</div><div class="toggle" id="notifToggle"></div></div>
+            <div class="profile-item" id="vibrateToggleItem"><div class="pi-icon">📳</div><div class="pi-label">Вибрация</div><div class="toggle" id="vibrateToggle"></div></div>
+            <div class="profile-item" id="showOnboardingBtn"><div class="pi-icon">📖</div><div class="pi-label">О приложении</div><div class="pi-arrow">›</div></div>
+        </div>
+        <div class="stats-title">О приложении</div>
+        <div class="profile-menu">
+            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.0.4</div></div>
+            <div class="profile-item" id="viewErrorLogBtn"><div class="pi-icon">🐛</div><div class="pi-label">Журнал ошибок</div><div class="pi-value" id="errorCountLabel">0</div><div class="pi-arrow">›</div></div>
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">byBag v2.0.4</div>
+    </div>
+</div>
+
+<div class="bottom-nav">
+    <button type="button" class="nav-item active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-label">Главная</span></button>
+    <button type="button" class="nav-item" data-page="lists"><span class="nav-icon">📋</span><span class="nav-label">Списки</span></button>
+    <button type="button" class="nav-item" data-page="profile"><span class="nav-icon">👤</span><span class="nav-label">Профиль</span></button>
+</div>
+
+<div class="checklist-page" id="checklistPage">
+    <div class="checklist-page-header">
+        <button type="button" class="back-btn" id="checklistBackBtn">←</button>
+        <div class="checklist-page-title">
+            <h2 id="checklistPageTitle">Сбор багажа</h2>
+            <div class="subtitle" id="checklistPageSubtitle"></div>
+        </div>
+        <div class="checklist-page-actions"><button type="button" class="page-action-btn" id="checklistShareBtn">📤</button></div>
+    </div>
+    <div class="checklist-page-content">
+        <div class="modal-progress">
+            <div class="progress-label"><span>Собрано вещей</span><span id="tripProgressText">0 / 0</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="tripProgressFill" style="width:0%"></div></div>
+        </div>
+        <div class="weather-card" id="weatherCard">
+            <div class="weather-header">
+                <div class="w-icon" id="weatherIcon">☀️</div>
+                <div class="w-city" id="weatherCity">--</div>
+                <div class="w-temp" id="weatherTemp">--</div>
+            </div>
+            <div class="weather-desc" id="weatherDesc">Загрузка...</div>
+            <div class="weather-forecast" id="weatherForecast"></div>
+        </div>
+        <div class="checklist-toolbar">
+            <input type="text" class="input-field" id="searchInput" placeholder="🔍 Поиск по вещам...">
+            <button type="button" class="toolbar-toggle" id="hideDoneToggle"><span>👁</span></button>
+        </div>
+        <div class="checklist" id="checklistContainer"></div>
+    </div>
+    <div class="checklist-page-bottom">
+        <button type="button" class="add-to-active" id="addToActiveBtn">+ Добавить вещь в поездку</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="typeModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="typeModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Новая поездка</h2>
+        <div class="field-label">Базовый тип <span class="hint">(необязательно)</span></div>
+        <div class="type-grid" id="typeGrid"></div>
+        <div class="field-label">Добавить свои списки <span class="hint">(можно несколько)</span></div>
+        <div class="list-picker" id="listPicker"></div>
+        <input type="text" class="input-field" id="tripName" placeholder="Название поездки (необязательно)">
+        <div class="field-label">Дата начала (необязательно)</div>
+        <input type="date" class="input-field" id="tripStartDate">
+        <div class="field-label">Дата окончания (необязательно)</div>
+        <input type="date" class="input-field" id="tripEndDate">
+        <div class="field-label">Город (для погоды, необязательно)</div>
+        <input type="text" class="input-field" id="tripCity" placeholder="Например: Москва">
+        <button type="button" class="btn-primary" id="createBtn" disabled>Создать поездку</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="wizardStep1">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="wizardStep1">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Новый список</h2>
+        <div class="preview-card" id="wiz1Preview" style="background:linear-gradient(135deg,#a8e6cf,#56c596)">
+            <div class="preview-emoji" id="wiz1Emoji">👕</div>
+            <div class="preview-name" id="wiz1Name">Название списка</div>
+            <div class="preview-count" id="wiz1Count">0 вещей</div>
+        </div>
+        <div class="field-label">Название списка</div>
+        <input type="text" class="input-field" id="wiz1NameInput" placeholder="Например: Аптечка" maxlength="30">
+        <div class="field-label">Иконка</div>
+        <div class="emoji-picker" id="wiz1EmojiPicker"></div>
+        <div class="field-label">Цветовая палитра</div>
+        <div class="color-picker" id="wiz1ColorPicker"></div>
+        <button type="button" class="btn-primary" id="wiz1NextBtn" disabled>Далее →</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="wizardStep2">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="wizardStep2">✕</button>
+        <div class="modal-handle"></div>
+        <div class="preview-card" id="wiz2Preview" style="background:linear-gradient(135deg,#a8e6cf,#56c596);margin-bottom:20px">
+            <div class="preview-emoji" id="wiz2Emoji">👕</div>
+            <div class="preview-name" id="wiz2Name">Название списка</div>
+            <div class="preview-count" id="wiz2Count">0 вещей</div>
+        </div>
+        <div class="field-label">Вещи в списке</div>
+        <div id="wiz2ItemsEditor"></div>
+        <div class="field-label">Быстрое добавление</div>
+        <div class="add-item-row">
+            <input type="text" class="input-field" id="wiz2NewItem" placeholder="Название вещи..." maxlength="60">
+            <button type="button" class="add-item-btn" id="wiz2AddBtn">+</button>
+        </div>
+        <button type="button" class="btn-secondary" id="wiz2AdvancedBtn">+ Вещь со всеми полями</button>
+        <button type="button" class="btn-primary" id="wiz2SaveBtn" style="margin-top:14px">Сохранить список</button>
+        <button type="button" class="btn-secondary" id="wiz2BackBtn">← Назад</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="tripWizardStep1">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="tripWizardStep1">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Новый тип поездки</h2>
+        <div class="preview-card" id="twiz1Preview" style="background:linear-gradient(135deg,#ffb347,#ff7e5f)">
+            <div class="preview-emoji" id="twiz1Emoji">🏖️</div>
+            <div class="preview-name" id="twiz1Name">Название типа</div>
+            <div class="preview-count" id="twiz1Count">0 вещей</div>
+        </div>
+        <div class="field-label">Название типа поездки</div>
+        <input type="text" class="input-field" id="twiz1NameInput" placeholder="Например: Кемпинг" maxlength="30">
+        <div class="field-label">Иконка</div>
+        <div class="emoji-picker" id="twiz1EmojiPicker"></div>
+        <div class="field-label">Цветовая палитра</div>
+        <div class="color-picker" id="twiz1ColorPicker"></div>
+        <button type="button" class="btn-primary" id="twiz1NextBtn" disabled>Далее →</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="tripWizardStep2">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="tripWizardStep2">✕</button>
+        <div class="modal-handle"></div>
+        <div class="preview-card" id="twiz2Preview" style="background:linear-gradient(135deg,#ffb347,#ff7e5f);margin-bottom:20px">
+            <div class="preview-emoji" id="twiz2Emoji">🏖️</div>
+            <div class="preview-name" id="twiz2Name">Название типа</div>
+            <div class="preview-count" id="twiz2Count">0 вещей</div>
+        </div>
+        <div class="field-label">Стартовый набор вещей <span class="hint">(необязательно)</span></div>
+        <div id="twiz2ItemsEditor"></div>
+        <div class="add-item-row">
+            <input type="text" class="input-field" id="twiz2NewItem" placeholder="Название вещи..." maxlength="60">
+            <button type="button" class="add-item-btn" id="twiz2AddBtn">+</button>
+        </div>
+        <button type="button" class="btn-secondary" id="twiz2AdvancedBtn">+ Вещь со всеми полями</button>
+        <button type="button" class="btn-primary" id="twiz2SaveBtn" style="margin-top:14px">Сохранить тип</button>
+        <button type="button" class="btn-secondary" id="twiz2BackBtn">← Назад</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="advancedItemModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="advancedItemModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Подробно о вещи</h2>
+        <div class="field-label">Название</div>
+        <input type="text" class="input-field" id="advName" placeholder="Например: Зубная щётка" maxlength="60">
+        <div class="field-label">Категория</div>
+        <select class="input-field" id="advCat"></select>
+        <div class="field-label">Количество</div>
+        <input type="number" class="input-field" id="advQty" value="1" min="1" max="99">
+        <div class="field-label">Заметка</div>
+        <input type="text" class="input-field" id="advNote" placeholder="Например: та, что с Type-C" maxlength="60">
+        <button type="button" class="btn-primary" id="advConfirmBtn">Добавить</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="listEditorModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="listEditorModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2 id="listEditorTitle">Редактировать список</h2>
+        <div class="preview-card" id="previewCard">
+            <div class="preview-emoji" id="previewEmoji">👕</div>
+            <div class="preview-name" id="previewName">Название списка</div>
+            <div class="preview-count" id="previewCount">0 вещей</div>
+        </div>
+        <div class="field-label">Название</div>
+        <input type="text" class="input-field" id="listName" placeholder="Название" maxlength="30">
+        <div class="field-label">Иконка</div>
+        <div class="emoji-picker" id="emojiPicker"></div>
+        <div class="field-label">Цветовая палитра</div>
+        <div class="color-picker" id="colorPicker"></div>
+        <div class="field-label">Вещи в списке</div>
+        <div id="itemsEditor"></div>
+        <div class="add-item-row">
+            <input type="text" class="input-field" id="newItemInput" placeholder="Добавить вещь..." maxlength="60">
+            <button type="button" class="add-item-btn" id="addItemBtn">+</button>
+        </div>
+        <button type="button" class="btn-secondary" id="listAdvancedBtn">+ Вещь со всеми полями</button>
+        <button type="button" class="btn-primary" id="saveListBtn" style="margin-top:14px">Сохранить</button>
+        <button type="button" class="btn-danger" id="deleteListBtn" style="display:none">Удалить список</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="advancedItemModal2">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="advancedItemModal2">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Подробно о вещи</h2>
+        <div class="field-label">Название</div>
+        <input type="text" class="input-field" id="adv2Name" placeholder="Например: Зубная щётка" maxlength="60">
+        <div class="field-label">Категория</div>
+        <select class="input-field" id="adv2Cat"></select>
+        <div class="field-label">Количество</div>
+        <input type="number" class="input-field" id="adv2Qty" value="1" min="1" max="99">
+        <div class="field-label">Заметка</div>
+        <input type="text" class="input-field" id="adv2Note" placeholder="Например: та, что с Type-C" maxlength="60">
+        <button type="button" class="btn-primary" id="adv2ConfirmBtn">Добавить</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="addItemModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="addItemModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Новая вещь</h2>
+        <div class="field-label">Название</div>
+        <input type="text" class="input-field" id="addItemName" placeholder="Например: Зубная щётка" maxlength="60">
+        <div class="field-label">Категория</div>
+        <select class="input-field" id="addItemCat"></select>
+        <div class="field-label">Количество</div>
+        <input type="number" class="input-field" id="addItemQty" value="1" min="1" max="99">
+        <div class="field-label">Заметка</div>
+        <input type="text" class="input-field" id="addItemNote" placeholder="Например: та, что с Type-C" maxlength="60">
+        <button type="button" class="btn-primary" id="confirmAddItemBtn">Добавить</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="editProfileModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="editProfileModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Редактировать профиль</h2>
+        <div style="display:flex;justify-content:center;margin-bottom:22px">
+            <div class="profile-avatar" id="editAvatar" style="width:110px;height:110px;font-size:44px">
+                <span id="editAvatarLetter">Э</span>
+                <span class="avatar-edit" style="width:34px;height:34px"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
+            </div>
+        </div>
+        <input type="file" id="avatarInput" accept="image/*" style="display:none">
+        <div class="field-label">Имя</div>
+        <input type="text" class="input-field" id="editName" placeholder="Ваше имя" maxlength="30">
+        <button type="button" class="btn-primary" id="saveProfileBtn">Сохранить</button>
+        <button type="button" class="btn-secondary" id="resetAvatarBtn">Удалить фото</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="categoryModal">
+    <div class="modal">
+        <button type="button" class="modal-close" id="categoryCloseBtn">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Новая категория</h2>
+        <div class="field-label">Название</div>
+        <input type="text" class="input-field" id="newCatName" placeholder="Например: Спорт" maxlength="20">
+        <div class="field-label">Иконка</div>
+        <div class="emoji-picker" id="catEmojiPicker"></div>
+        <button type="button" class="btn-primary" id="saveCatBtn">Сохранить категорию</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="manageCategoriesModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="manageCategoriesModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Мои категории</h2>
+        <div id="catListContainer"></div>
+        <button type="button" class="btn-primary" id="addNewCatFromList" style="margin-top:14px">+ Создать категорию</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="errorLogModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="errorLogModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Журнал ошибок</h2>
+        <div id="errorLogContainer"></div>
+        <button type="button" class="btn-secondary" id="downloadLogBtn" style="margin-top:14px">💾 Скачать JSON</button>
+        <button type="button" class="btn-danger" id="clearLogBtn">🗑 Очистить журнал</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="notifOnboardModal">
+    <div class="modal">
+        <div style="padding:8px 4px">
+            <div style="font-size:72px;text-align:center;margin-bottom:16px;animation:float 3s ease-in-out infinite">🔔</div>
+            <h2 style="font-size:22px;font-weight:800;color:var(--text);text-align:center;margin-bottom:10px;padding:0">Включить напоминания?</h2>
+            <p style="font-size:15px;color:var(--text-2);text-align:center;line-height:1.55;font-weight:500;margin-bottom:20px;padding:0 12px">Чтобы вовремя собрать багаж и ничего не забыть, разрешите уведомления.</p>
+            <ul style="list-style:none;margin-bottom:24px;padding:0 12px">
+                <li style="font-size:14px;color:var(--text);font-weight:600;padding:8px 0;display:flex;align-items:center;gap:10px"><span style="font-size:18px;width:28px;text-align:center">📅</span> Напоминание за день до поездки</li>
+                <li style="font-size:14px;color:var(--text);font-weight:600;padding:8px 0;display:flex;align-items:center;gap:10px"><span style="font-size:18px;width:28px;text-align:center">🧳</span> Напоминание в день отправления</li>
+                <li style="font-size:14px;color:var(--text);font-weight:600;padding:8px 0;display:flex;align-items:center;gap:10px"><span style="font-size:18px;width:28px;text-align:center">✈️</span> Никакого спама — только по делу</li>
+            </ul>
+            <button type="button" class="btn-primary" id="notifAllowBtn">Разрешить уведомления</button>
+            <button type="button" class="btn-secondary" id="notifLaterBtn">Позже</button>
+        </div>
+    </div>
+</div>
+
+<div class="onboarding-viewer" id="onboardingViewer">
+    <div class="onb-slide" id="onbSlide">
+        <div class="onb-bg-emoji" id="onbBgEmoji">🧳</div>
+        <div class="onb-content" id="onbContent"></div>
+    </div>
+    <div class="onb-bottom">
+        <div class="onb-dots" id="onbDots"></div>
+        <div class="onb-buttons">
+            <button type="button" class="onb-skip" id="onbSkipBtn">Пропустить</button>
+            <button type="button" class="onb-next" id="onbNextBtn">Далее →</button>
+        </div>
+    </div>
+</div>
+
+<div class="tip-viewer" id="tipViewer">
+    <div class="tip-viewer-bg" id="tipViewerBg"></div>
+    <div class="tip-viewer-deco" id="tipViewerDeco">💡</div>
+    <div class="tip-viewer-header">
+        <div class="tip-viewer-avatar" id="tipViewerAvatar">💡</div>
+        <div class="tip-viewer-info">
+            <div class="t-title" id="tipViewerTitle">Советы</div>
+            <div class="t-sub" id="tipViewerSub">полезное для поездки</div>
+        </div>
+        <button type="button" class="tip-viewer-close" id="tipViewerClose">✕</button>
+    </div>
+    <div class="tip-viewer-content" id="tipViewerContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/errors.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
