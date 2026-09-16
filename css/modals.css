@@ -125,4 +125,28 @@ body.dark .profile-item .pi-icon{background:rgba(107,140,255,.15)}
 .achievement{padding:16px 14px;background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 6px 20px var(--shadow);text-align:center;opacity:.4;filter:grayscale(1)}
 .achievement.unlocked{opacity:1;filter:grayscale(0);background:linear-gradient(135deg,rgba(255,154,90,.15),rgba(255,107,138,.15));border-color:rgba(255,154,90,.4)}
 body.dark .achievement.unlocked{background:linear-gradient(135deg,rgba(107,140,255,.15),rgba(160,107,255,.15));border-color:rgba(107,140,255,.4)}
-.achievement .ach
+.achievement .ach-icon{font-size:28px;margin-bottom:6px}
+.achievement .ach-name{font-size:12px;font-weight:700;color:var(--text);line-height:1.3}
+.achievement .ach-desc{font-size:10.5px;color:var(--text-3);margin-top:4px;font-weight:500}
+
+/* ONBOARDING */
+.onboarding-viewer{position:fixed;inset:0;z-index:250;display:none;flex-direction:column;background:var(--bg)}
+.onboarding-viewer.active{display:flex}
+.onb-slide{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 30px;text-align:center;position:relative;overflow:hidden}
+.onb-slide .onb-bg-emoji{position:absolute;font-size:340px;line-height:1;opacity:.06;pointer-events:none;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-8deg)}
+.onb-slide .onb-content{position:relative;z-index:1;max-width:400px;animation:onbSlideIn .5s cubic-bezier(.34,1.36,.64,1)}
+@keyframes onbSlideIn{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.onb-slide .onb-icon{font-size:100px;margin-bottom:24px;line-height:1;display:inline-block;animation:onbFloat 3s ease-in-out infinite}
+@keyframes onbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.onb-slide h2{font-size:28px;font-weight:800;color:var(--text);margin-bottom:14px;letter-spacing:-.6px;line-height:1.15}
+.onb-slide p{font-size:15px;color:var(--text-2);line-height:1.6;font-weight:500;margin-bottom:8px}
+.onb-slide .onb-list{list-style:none;margin-top:20px;padding:0;text-align:left;display:inline-block}
+.onb-slide .onb-list li{font-size:14px;color:var(--text);font-weight:600;padding:8px 0;display:flex;align-items:center;gap:10px}
+.onb-slide .onb-list li .onb-li-icon{font-size:20px;width:32px;text-align:center;flex-shrink:0}
+.onb-bottom{padding:20px 24px 40px;background:linear-gradient(to top,var(--bg) 70%,transparent);flex-shrink:0}
+.onb-dots{display:flex;justify-content:center;gap:8px;margin-bottom:24px}
+.onb-dot{width:8px;height:8px;border-radius:50%;background:var(--border-soft);transition:all .3s}
+.onb-dot.active{width:26px;border-radius:100px;background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
+.onb-buttons{display:flex;gap:10px}
+.onb-buttons .onb-skip{flex:0 0 auto;padding:18px 20px;border:1.5px solid var(--border-soft);border-radius:18px;background:var(--card);color:var(--text-2);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer}
+.onb-buttons .onb-next{flex:1;padding:18px;border:none;border-radius:18px;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(255,107,138,.35)}
