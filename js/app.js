@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Логика приложения и рендер всех экранов
 // Файл: js/app.js
-// Версия: 2.3.0
+// Версия: 2.3.1
 // ============================================================
 
 // ============ УТИЛИТЫ ============
@@ -537,7 +537,6 @@ function openTypeModal() {
     openModal('typeModal');
 }
 
-// ============ СБОРКА ВЕЩЕЙ ИЗ ИСТОЧНИКОВ ============
 function buildCombinedItems() {
     var sources = [];
     if (selectedType) {
@@ -572,7 +571,6 @@ function buildCombinedItems() {
         });
     });
 
-    // Сохраняем метаданные источников (нужны для рендера заголовков)
     var sourceMeta = sources.map(function(s) {
         return { id: s.id, name: s.name, emoji: s.emoji || '📋', c1: s.c1 || '#a8e6cf', c2: s.c2 || '#56c596', kind: s.kind };
     });
@@ -599,13 +597,21 @@ function createTrip() {
         }
     }
 
+    // === Имя поездки ===
+    // 1. Юзер ввёл сам → используем
+    // 2. Есть тип → имя типа (без суффиксов)
+    // 3. Только один список → имя этого списка
+    // 4. Несколько списков без типа → "Поездка"
     var userInputName = (($('tripName') || {}).value || '').trim();
     var finalName = userInputName;
     if (!finalName) {
-        if (selectedListIds.length > 1) finalName = defaultName + ' +' + (selectedListIds.length - 1);
-        else if (selectedType && selectedListIds.length === 1) finalName = defaultName + ' + ' + customTypes[selectedListIds[0]].name;
-        else if (selectedListIds.length === 1 && !selectedType) finalName = customTypes[selectedListIds[0]].name;
-        else finalName = defaultName || 'Поездка';
+        if (selectedType) {
+            finalName = defaultName || 'Поездка';
+        } else if (selectedListIds.length === 1) {
+            finalName = (customTypes[selectedListIds[0]] || {}).name || 'Поездка';
+        } else {
+            finalName = 'Поездка';
+        }
     }
 
     var startDate = ($('tripStartDate') || {}).value || null;
@@ -880,12 +886,13 @@ function openAdvanced(target) {
 function advConfirm() {
     var n = (($('advName') || {}).value || '').trim();
     if (!n) { showToast('Введите название'); return; }
+    var cat = ($('advCat') || {}).value || 'other';
+    if (cat === '__new__') cat = 'other';
     var newItem = {
         text: n, qty: parseInt($('advQty').value) || 1,
         note: (($('advNote') || {}).value || '').trim(),
-        category: ($('advCat') || {}).value || 'other'
+        category: cat
     };
-    if (newItem.category === '__new__') newItem.category = 'other';
     closeModal('advancedItemModal');
     if (advTarget === 'twiz') { twiz.items.push(newItem); openTwiz2(); }
     else { wiz.items.push(newItem); openWiz2(); }
@@ -1017,7 +1024,6 @@ function closeChecklistPage() {
     renderHome();
 }
 
-// Рендер чек-листа с группировкой по спискам
 function renderChecklistPage() {
     try {
         var trip = getCurrentTrip();
@@ -1045,7 +1051,6 @@ function renderChecklistPage() {
         cont.innerHTML = '';
         var q = searchQuery.toLowerCase().trim();
 
-        // Собираем видимые вещи
         var vis = [];
         trip.items.forEach(function(it, i) {
             if (settings.hideDone && it.done) return;
@@ -1063,26 +1068,21 @@ function renderChecklistPage() {
             return;
         }
 
-        // Есть ли у поездки sources (информация о списках)?
         var hasSources = trip.sources && trip.sources.length > 0;
 
         if (!hasSources) {
-            // Старые поездки — плоский список, без группировки
+            // Старые поездки — плоский список
             vis.forEach(function(v) { cont.appendChild(buildSwipeItem(v.item, v.idx)); });
             return;
         }
 
         // Группировка по спискам
-        // Для каждой вещи берём listIds (массив), показываем в каждом списке
-        // Строим map: sourceId -> [vis items]
         var grouped = {};
         trip.sources.forEach(function(src) { grouped[src.id] = []; });
 
         vis.forEach(function(v) {
             var lids = v.item.listIds;
             if (!lids || !lids.length) {
-                // Вещь без привязки к списку — в "Разное" (если оно есть) или пропускаем
-                // Создадим виртуальный source "other"
                 if (!grouped['__other__']) grouped['__other__'] = [];
                 grouped['__other__'].push(v);
             } else {
@@ -1092,7 +1092,6 @@ function renderChecklistPage() {
             }
         });
 
-        // Отрисовка групп
         trip.sources.forEach(function(src) {
             var groupItems = grouped[src.id] || [];
             if (!groupItems.length) return;
@@ -1100,7 +1099,6 @@ function renderChecklistPage() {
             var sec = document.createElement('div');
             sec.className = 'list-section';
 
-            // Считаем прогресс внутри группы
             var totalIn = trip.items.filter(function(i) {
                 return i.listIds && i.listIds.indexOf(src.id) !== -1;
             }).length;
@@ -1119,7 +1117,6 @@ function renderChecklistPage() {
             cont.appendChild(sec);
         });
 
-        // "Разное" — вещи без привязки
         if (grouped['__other__'] && grouped['__other__'].length) {
             var sec2 = document.createElement('div');
             sec2.className = 'list-section';
