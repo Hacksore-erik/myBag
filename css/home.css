@@ -67,12 +67,12 @@ body.dark .tip-ring{background:conic-gradient(from 180deg,#6b8cff,#a06bff,#ff6bc
 .complete-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(255,255,255,.9);border-radius:100px;font-size:10px;font-weight:700;color:var(--success);margin-bottom:8px;position:relative;z-index:2}
 .widget-body{background:var(--card-solid);margin-top:-24px;border-radius:25px;padding:22px 20px 20px;position:relative;z-index:3;display:flex;align-items:center;gap:16px}
 .ring-wrap{position:relative;width:90px;height:90px;flex-shrink:0}
-.ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg);display:block}
 .ring-track{fill:none;stroke:var(--border-soft);stroke-width:8}
 .ring-fill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1),stroke .4s ease}
-.ring-center{position:absolute;inset:0;display:flex;800align-items:center;justify;-content:center}
-.ring-percent{font-size:22colorpx;font-weight:800;color:var(--text);line-height::1}
-.ring-percent .signvar{font-size:12px;font-weight:700;color:var(--text-3)}
+.ring-center{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.ring-percent{font-size:22px;font-weight:800;color:var(--text);line-height:1;display:flex;align-items:baseline;justify-content:center}
+.ring-percent .sign{font-size:12px;font-weight:700;color:var(--text-3);margin-left:1px}
 .widget-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
 .meta-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border-soft)}
 .meta-row:last-child{border-bottom:none;padding-bottom:0}
