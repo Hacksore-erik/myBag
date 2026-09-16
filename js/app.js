@@ -1,47 +1,48 @@
 // ============================================================
 // myBag — Логика приложения и рендер всех экранов
 // Файл: js/app.js
-// Версия: 2.1.0
+// Версия: 2.2.0
 // ============================================================
 
-// ============ СОСТОЯНИЕ АККОРДЕОНА ============
+// ============ УТИЛИТЫ ============
 var editingItemIdx = null;
 
-function getExpandedItems() {
-    try {
-        var trip = getCurrentTrip();
-        if (!trip) return [];
-        var raw = sessionStorage.getItem('bybag_expanded_' + trip.id);
-        return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
-}
-
-function saveExpandedItems(arr) {
-    try {
-        var trip = getCurrentTrip();
-        if (!trip) return;
-        sessionStorage.setItem('bybag_expanded_' + trip.id, JSON.stringify(arr));
-    } catch (e) {}
-}
-
-function toggleItemExpand(idx) {
-    var arr = getExpandedItems();
-    var pos = arr.indexOf(idx);
-    if (pos === -1) arr.push(idx);
-    else arr.splice(pos, 1);
-    saveExpandedItems(arr);
-    vibrate();
-    renderChecklistPage();
-}
-
-function collapseAllItems() {
-    saveExpandedItems([]);
-    vibrate();
-    renderChecklistPage();
-}
-
-function isItemExpanded(idx) {
-    return getExpandedItems().indexOf(idx) !== -1;
+// Долгое нажатие: 500мс без движения → callback. Иначе — onClick.
+function attachLongPress(el, onLong, onClick) {
+    var timer = null, startX = 0, startY = 0, moved = false, longFired = false;
+    function clear() {
+        if (timer) { clearTimeout(timer); timer = null; }
+    }
+    el.addEventListener('touchstart', function(e) {
+        if (e.touches.length !== 1) return;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        moved = false;
+        longFired = false;
+        clear();
+        timer = setTimeout(function() {
+            longFired = true;
+            vibrate();
+            if (onLong) onLong();
+        }, 500);
+    }, { passive: true });
+    el.addEventListener('touchmove', function(e) {
+        if (!timer) return;
+        var dx = Math.abs(e.touches[0].clientX - startX);
+        var dy = Math.abs(e.touches[0].clientY - startY);
+        if (dx > 10 || dy > 10) { moved = true; clear(); }
+    }, { passive: true });
+    el.addEventListener('touchend', function(e) {
+        clear();
+        if (longFired || moved) return;
+        if (onClick) onClick(e);
+    }, { passive: true });
+    el.addEventListener('touchcancel', function() { clear(); }, { passive: true });
+    // Для десктопа / мыши
+    el.addEventListener('click', function(e) {
+        if (longFired) { longFired = false; return; }
+        if (onClick) onClick(e);
+    });
 }
 
 // ============ СОВЕТЫ ============
@@ -1041,21 +1042,21 @@ function renderChecklistPage() {
         if (f) { f.style.width = s.percent + '%'; f.classList.toggle('complete', s.percent === 100 && s.total > 0); }
         var tg = $('hideDoneToggle'); if (tg) tg.classList.toggle('active', !!settings.hideDone);
 
-        var cb = $('collapseAllBtn');
-        if (cb) {
-            var hasExpanded = getExpandedItems().length > 0;
-            cb.style.display = hasExpanded ? 'inline-flex' : 'none';
-        }
+        // Кнопку "Свернуть все" скрываем — она больше не нужна
+        var cb = $('collapseAllBtn'); if (cb) cb.style.display = 'none';
 
         var cont = $('checklistContainer'); if (!cont) return;
         cont.innerHTML = '';
         var q = searchQuery.toLowerCase().trim();
+
+        // Собираем видимые вещи с их исходными индексами
         var vis = [];
         trip.items.forEach(function(it, i) {
             if (settings.hideDone && it.done) return;
             if (q && it.text.toLowerCase().indexOf(q) === -1) return;
             vis.push({ item: it, idx: i });
         });
+
         if (!vis.length) {
             var em = document.createElement('div');
             em.className = 'empty-search';
@@ -1065,25 +1066,12 @@ function renderChecklistPage() {
             cont.appendChild(em);
             return;
         }
-        var groups = {};
-        vis.forEach(function(v) { var c = v.item.category || 'other'; (groups[c] = groups[c] || []).push(v); });
-        var allCats = getAllCategories();
-        Object.keys(allCats).forEach(function(k) {
-            if (!groups[k] || !groups[k].length) return;
-            var cat = allCats[k];
-            var sec = document.createElement('div');
-            sec.className = 'cat-section';
-            var allIn = trip.items.filter(function(i) { return (i.category || 'other') === k; });
-            var doneIn = allIn.filter(function(i) { return i.done; }).length;
-            var hd = document.createElement('div');
-            hd.className = 'cat-header';
-            hd.innerHTML = '<span class="cat-icon">' + cat.icon + '</span><span>' + escapeHtml(cat.name) + '</span><span class="cat-count">' + doneIn + '/' + allIn.length + '</span>';
-            sec.appendChild(hd);
-            groups[k].forEach(function(v) { sec.appendChild(buildSwipeItem(v.item, v.idx)); });
-            cont.appendChild(sec);
-        });
+
+        // Плоский список — без группировки по категориям
+        vis.forEach(function(v) { cont.appendChild(buildSwipeItem(v.item, v.idx)); });
     } catch (e) { bbLogError(3004, 'Ошибка рендера чеклиста', { stack: e.stack }); }
 }
+
 function buildSwipeItem(item, idx) {
     var wrap = document.createElement('div');
     wrap.className = 'check-item-wrap';
@@ -1119,89 +1107,53 @@ function buildSwipeItem(item, idx) {
     }, { passive: true });
     return wrap;
 }
+
 function deleteActiveItem(idx) {
     try {
         var trip = getCurrentTrip();
         if (!trip || !trip.items[idx]) return;
         trip.items.splice(idx, 1);
-        var exp = getExpandedItems();
-        exp = exp.filter(function(i) { return i !== idx; }).map(function(i) { return i > idx ? i - 1 : i; });
-        saveExpandedItems(exp);
         saveActive(); vibrate();
         renderChecklistPage(); renderHome(); renderProfile();
         showToast('Удалено');
     } catch (e) { bbLogError(7002, 'Ошибка удаления вещи', { stack: e.stack }); }
 }
+
 function buildCheckItem(item, idx) {
     var div = document.createElement('div');
-    var expanded = isItemExpanded(idx);
-    div.className = 'check-item' + (item.done ? ' checked' : '') + (expanded ? ' expanded' : ' compact');
+    div.className = 'check-item' + (item.done ? ' checked' : '');
 
+    // Кружок отметки — тап → toggle
     var c = document.createElement('div');
     c.className = 'check-circle'; c.textContent = '✓';
-    c.addEventListener('click', function(e) { e.stopPropagation(); toggleItem(idx); });
+    c.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleItem(idx);
+    });
     div.appendChild(c);
 
+    // Тело — название + qty + заметка
     var b = document.createElement('div');
     b.className = 'check-body';
-    var arrow = expanded ? '⌄' : '›';
     var qtyBadge = (item.qty && item.qty > 1) ? '<span class="check-qty">×' + item.qty + '</span>' : '';
-    var allCats = getAllCategories();
-    var catIcon = '<span class="check-cat-mini">' + (allCats[item.category] ? allCats[item.category].icon : '📦') + '</span>';
-    var noteLine = (expanded && item.note) ? '<div class="check-note">📝 ' + escapeHtml(item.note) + '</div>' : '';
-    var catLine = expanded ? '<div class="check-cat-line">📁 ' + escapeHtml((allCats[item.category] || { name: 'Разное' }).name) + '</div>' : '';
-    var fromLine = (expanded && item.from) ? '<div class="check-from">из «' + escapeHtml(item.from) + '»</div>' : '';
+    var noteLine = item.note ? '<div class="check-note">' + escapeHtml(item.note) + '</div>' : '';
     b.innerHTML =
         '<div class="check-row-main">' +
-            catIcon +
             '<span class="check-text">' + highlight(item.text) + '</span>' +
             qtyBadge +
-            '<span class="expand-arrow">' + arrow + '</span>' +
         '</div>' +
-        noteLine +
-        catLine +
-        fromLine;
-    b.addEventListener('click', function() { toggleItemExpand(idx); });
+        noteLine;
+
+    // Долгое нажатие на тело → править, короткий тап → toggle
+    attachLongPress(b,
+        function() { openEditItemModal(idx); },
+        function() { toggleItem(idx); }
+    );
+
     div.appendChild(b);
-
-    if (expanded) {
-        var actions = document.createElement('div');
-        actions.className = 'check-actions';
-        actions.addEventListener('click', function(e) { e.stopPropagation(); });
-
-        var st = document.createElement('div');
-        st.className = 'qty-stepper';
-        var m = document.createElement('button');
-        m.type = 'button'; m.className = 'qty-btn'; m.textContent = '−';
-        m.addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (item.qty > 1) { item.qty--; saveActive(); renderChecklistPage(); renderHome(); }
-        });
-        var v = document.createElement('div');
-        v.className = 'qty-val'; v.textContent = item.qty || 1;
-        var p = document.createElement('button');
-        p.type = 'button'; p.className = 'qty-btn'; p.textContent = '+';
-        p.addEventListener('click', function(e) { e.stopPropagation(); item.qty = (item.qty || 1) + 1; saveActive(); renderChecklistPage(); renderHome(); });
-        st.appendChild(m); st.appendChild(v); st.appendChild(p);
-
-        var editBtn = document.createElement('button');
-        editBtn.type = 'button'; editBtn.className = 'check-action-btn edit';
-        editBtn.innerHTML = '✎ Править';
-        editBtn.addEventListener('click', function(e) { e.stopPropagation(); openEditItemModal(idx); });
-
-        var delBtn = document.createElement('button');
-        delBtn.type = 'button'; delBtn.className = 'check-action-btn del';
-        delBtn.innerHTML = '🗑';
-        delBtn.addEventListener('click', function(e) { e.stopPropagation(); deleteActiveItem(idx); });
-
-        actions.appendChild(st);
-        actions.appendChild(editBtn);
-        actions.appendChild(delBtn);
-        div.appendChild(actions);
-    }
-
     return div;
 }
+
 function highlight(text) {
     if (!searchQuery) return escapeHtml(text);
     var esc = escapeHtml(text);
@@ -1209,6 +1161,7 @@ function highlight(text) {
     try { return esc.replace(new RegExp('(' + q + ')', 'gi'), '<span class="search-highlight">$1</span>'); }
     catch (e) { return esc; }
 }
+
 function toggleItem(idx) {
     try {
         var trip = getCurrentTrip();
@@ -1226,6 +1179,7 @@ function toggleItem(idx) {
         renderChecklistPage(); renderHome(); renderProfile();
     } catch (e) { bbLogError(7001, 'Ошибка отметки вещи', { stack: e.stack }); }
 }
+
 function spawnPlusOne(x, y) {
     var el = document.createElement('div');
     el.className = 'plus-one'; el.textContent = '+1';
@@ -1312,6 +1266,7 @@ function openAddItemModal() {
     var overlay = $('addItemModal'); if (overlay) overlay.classList.add('above-checklist');
     openModal('addItemModal');
 }
+
 function openEditItemModal(idx) {
     var trip = getCurrentTrip();
     if (!trip || !trip.items[idx]) return;
@@ -1327,6 +1282,7 @@ function openEditItemModal(idx) {
     var overlay = $('addItemModal'); if (overlay) overlay.classList.add('above-checklist');
     openModal('addItemModal');
 }
+
 function confirmAddItem() {
     try {
         var trip = getCurrentTrip();
@@ -1360,6 +1316,7 @@ function confirmAddItem() {
         }
     } catch (e) { bbLogError(7004, 'Ошибка добавления/правки вещи', { stack: e.stack }); }
 }
+
 function closeAddItemModal() {
     editingItemIdx = null;
     var t = $('addItemModalTitle'); if (t) t.textContent = 'Новая вещь';
