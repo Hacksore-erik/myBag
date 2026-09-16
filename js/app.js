@@ -1307,8 +1307,8 @@ function openAddItemModal() {
     var q = $('addItemQty'); if (q) q.value = '1';
     var s = $('addItemCat');
     if (s) fillCategorySelect(s, 'other');
-    var t = $('addItemModalTitle'); if (t) t.textContent = 'Добавить вещь';
-    var btn = $('addItemSaveBtn'); if (btn) btn.textContent = 'Добавить';
+    var t = $('addItemModalTitle'); if (t) t.textContent = 'Новая вещь';
+    var btn = $('confirmAddItemBtn'); if (btn) btn.textContent = 'Добавить';
     var overlay = $('addItemModal'); if (overlay) overlay.classList.add('above-checklist');
     openModal('addItemModal');
 }
@@ -1323,7 +1323,7 @@ function openEditItemModal(idx) {
     var s = $('addItemCat');
     if (s) fillCategorySelect(s, item.category || 'other');
     var t = $('addItemModalTitle'); if (t) t.textContent = 'Править вещь';
-    var btn = $('addItemSaveBtn'); if (btn) btn.textContent = 'Сохранить';
+    var btn = $('confirmAddItemBtn'); if (btn) btn.textContent = 'Сохранить';
     var overlay = $('addItemModal'); if (overlay) overlay.classList.add('above-checklist');
     openModal('addItemModal');
 }
@@ -1362,8 +1362,8 @@ function confirmAddItem() {
 }
 function closeAddItemModal() {
     editingItemIdx = null;
-    var t = $('addItemModalTitle'); if (t) t.textContent = 'Добавить вещь';
-    var btn = $('addItemSaveBtn'); if (btn) btn.textContent = 'Добавить';
+    var t = $('addItemModalTitle'); if (t) t.textContent = 'Новая вещь';
+    var btn = $('confirmAddItemBtn'); if (btn) btn.textContent = 'Добавить';
     closeModal('addItemModal');
     var overlay = $('addItemModal'); if (overlay) overlay.classList.remove('above-checklist');
 }
