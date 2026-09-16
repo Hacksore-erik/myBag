@@ -49,12 +49,12 @@ body.dark .tip-ring{background:conic-gradient(from 180deg,#6b8cff,#a06bff,#ff6bc
 .tip-nav-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35);transition:all .3s;cursor:pointer}
 .tip-nav-dot.active{width:24px;border-radius:100px;background:#fff}
 
-/* WIDGET */
-.main-widget{position:relative;border-radius:25px;overflow:hidden;overflow:clip;cursor:pointer;background:var(--card-solid);box-shadow:0 16px 40px var(--shadow);display:flex;flex-direction:column;width:100%;animation:slideIn .5s ease;isolation:isolate;-webkit-transform:translateZ(0);transform:translateZ(0);-webkit-backface-visibility:hidden;backface-visibility:hidden}
+/* WIDGET — БЕЗ белых полос при анимации */
+.main-widget{position:relative;border-radius:25px;overflow:clip;cursor:pointer;background:var(--card-solid);box-shadow:0 16px 40px var(--shadow);display:flex;flex-direction:column;width:100%;animation:slideIn .5s ease;-webkit-mask-image:-webkit-radial-gradient(white,black);mask-image:-webkit-radial-gradient(white,black)}
 .main-widget:active{transform:scale(.985)}
 @keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.widget-hero{position:relative;padding:22px 20px 40px;overflow:hidden;background:linear-gradient(135deg,var(--c1,#ffb347),var(--c2,#ff7e5f));border-radius:25px 25px 0 0;-webkit-transform:translateZ(0);transform:translateZ(0)}
-.widget-hero .bg-emoji{position:absolute;right:-10px;bottom:-26px;font-size:140px;line-height:1;opacity:.22;pointer-events:none;transform:rotate(-12deg);will-change:transform;-webkit-transform:translateZ(0) rotate(-12deg);transform:translateZ(0) rotate(-12deg)}
+.widget-hero{position:relative;padding:22px 20px 40px;overflow:hidden;background:linear-gradient(135deg,var(--c1,#ffb347),var(--c2,#ff7e5f));border-radius:25px 25px 0 0;-webkit-mask-image:-webkit-radial-gradient(white,black);mask-image:-webkit-radial-gradient(white,black)}
+.widget-hero .bg-emoji{position:absolute;right:-10px;bottom:-26px;font-size:140px;line-height:1;opacity:.22;pointer-events:none;transform:rotate(-12deg)}
 .widget-hero::before{content:'';position:absolute;top:-48px;left:-48px;width:146px;height:146px;border-radius:50%;background:rgba(255,255,255,.15)}
 .hero-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;margin-bottom:18px}
 .hero-label{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.35);border-radius:100px;font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fff}
@@ -205,5 +205,5 @@ body.dark .search-highlight{background:rgba(255,210,90,.4);color:#fff}
 .forecast-day .fd-temp{font-size:9.5px;font-weight:700;color:var(--text)}
 .add-to-active{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding:14px;border:1.5px dashed var(--border-soft);border-radius:16px;background:transparent;color:var(--text-2);font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer;width:100%}
 
-/* Фикс — модалка поверх других */
-.modal-overlay.on-top2{z-index:500!important}
+/* Фикс — модалка категории поверх других */
+.modal-overlay.on-top2{z-index:9999!important}
