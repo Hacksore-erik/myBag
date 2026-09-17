@@ -106,8 +106,19 @@ function renderAddListToTripPicker() {
         p.innerHTML = '';
         var trip = getCurrentTrip();
         if (!trip) return;
+        // Собираем ID источников — сначала из sources, потом из items.listIds (страховка)
         var inTrip = {};
-        if (trip.sources) trip.sources.forEach(function(s) { inTrip[s.id] = true; });
+        if (trip.sources && Array.isArray(trip.sources)) {
+            trip.sources.forEach(function(s) { if (s && s.id) inTrip[s.id] = true; });
+        }
+        // Дополнительная проверка: у кого ещё есть вещи с этим listIds
+        if (trip.items && Array.isArray(trip.items)) {
+            trip.items.forEach(function(it) {
+                if (it.listIds && Array.isArray(it.listIds)) {
+                    it.listIds.forEach(function(id) { inTrip[id] = true; });
+                }
+            });
+        }
 
         var keys = Object.keys(customTypes);
         var availableCount = 0;
