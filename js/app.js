@@ -93,6 +93,7 @@ function openAddListToTripModal() {
         selectedListsToAdd = [];
         renderAddListToTripPicker();
         openModal('addListToTripModal');
+        var ov = $('addListToTripModal'); if (ov) ov.classList.add('above-checklist');
     } catch (e) {
         bbLogError(9012, 'Ошибка openAddListToTripModal: ' + e.message, { stack: e.stack });
         showToast('Ошибка: ' + e.message);
