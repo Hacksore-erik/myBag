@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Логика приложения и рендер всех экранов
 // Файл: js/app.js
-// Версия: 2.4.0
+// Версия: 2.5.0
 // ============================================================
 
 // ============ УТИЛИТЫ ============
@@ -36,17 +36,15 @@ function attachLongPress(el, onLong, onClick) {
         if (onClick) onClick(e);
     });
 }
+
 // ============ FAB ============
+var selectedListsToAdd = [];
+
 function toggleFabMenu() {
     var wrap = $('fabWrap');
-    var overlay = $('fabOverlay');
     if (!wrap) return;
-    var isOpen = wrap.classList.contains('open');
-    if (isOpen) {
-        closeFabMenu();
-    } else {
-        openFabMenu();
-    }
+    if (wrap.classList.contains('open')) closeFabMenu();
+    else openFabMenu();
 }
 
 function openFabMenu() {
@@ -56,7 +54,6 @@ function openFabMenu() {
     wrap.classList.add('open');
     if (overlay) overlay.classList.add('active');
     vibrate();
-    // Автоскролл вверх, чтобы FAB не перекрывал контент
     var content = document.querySelector('.checklist-page-content');
     if (content) {
         try { content.scrollBy({ top: 100, behavior: 'smooth' }); } catch (e) { content.scrollTop += 100; }
@@ -70,6 +67,133 @@ function closeFabMenu() {
     wrap.classList.remove('open');
     if (overlay) overlay.classList.remove('active');
 }
+
+// ============ ДОБАВЛЕНИЕ СПИСКА В ПОЕЗДКУ ============
+function openAddListToTripModal() {
+    var trip = getCurrentTrip();
+    if (!trip) { showToast('Нет активной поездки'); return; }
+    var keys = Object.keys(customTypes);
+    if (!keys.length) {
+        showToast('Сначала создайте список в разделе «Списки»');
+        return;
+    }
+    selectedListsToAdd = [];
+    renderAddListToTripPicker();
+    openModal('addListToTripModal');
+}
+
+function renderAddListToTripPicker() {
+    var p = $('addListToTripPicker'); if (!p) return;
+    p.innerHTML = '';
+    var trip = getCurrentTrip();
+    if (!trip) return;
+    var inTrip = {};
+    if (trip.sources) trip.sources.forEach(function(s) { inTrip[s.id] = true; });
+
+    var keys = Object.keys(customTypes);
+    var availableCount = 0;
+
+    keys.forEach(function(key) {
+        var t = customTypes[key];
+        var alreadyIn = !!inTrip[key];
+        var isSel = selectedListsToAdd.indexOf(key) !== -1;
+
+        var item = document.createElement('div');
+        item.className = 'list-picker-item' + (isSel ? ' selected' : '') + (alreadyIn ? ' disabled' : '');
+        item.innerHTML =
+            '<div class="lp-emoji">' + (t.emoji || '👕') + '</div>' +
+            '<div class="lp-body">' +
+                '<div class="lp-name">' + escapeHtml(t.name || 'Список') + '</div>' +
+                '<div class="lp-meta">' + t.items.length + ' ' + plural(t.items.length, 'вещь', 'вещи', 'вещей') + (alreadyIn ? ' · уже в поездке' : '') + '</div>' +
+            '</div>' +
+            '<div class="lp-check">✓</div>';
+
+        if (!alreadyIn) {
+            availableCount++;
+            item.addEventListener('click', function() {
+                var i = selectedListsToAdd.indexOf(key);
+                if (i === -1) selectedListsToAdd.push(key);
+                else selectedListsToAdd.splice(i, 1);
+                renderAddListToTripPicker();
+            });
+        } else {
+            item.style.opacity = '.4';
+            item.style.pointerEvents = 'none';
+        }
+        p.appendChild(item);
+    });
+
+    if (!availableCount) {
+        var emp = document.createElement('div');
+        emp.style.cssText = 'text-align:center;padding:20px;color:var(--text-3);font-size:13.5px;font-weight:500';
+        emp.textContent = 'Все списки уже в поездке';
+        p.appendChild(emp);
+    }
+
+    var btn = $('addListToTripConfirmBtn');
+    if (btn) {
+        btn.disabled = !selectedListsToAdd.length;
+        btn.textContent = selectedListsToAdd.length ? 'Добавить (' + selectedListsToAdd.length + ')' : 'Добавить в поездку';
+    }
+}
+
+function confirmAddListToTrip() {
+    var trip = getCurrentTrip();
+    if (!trip) return;
+    if (!selectedListsToAdd.length) { showToast('Выберите список'); return; }
+
+    if (!trip.sources) trip.sources = [];
+    if (!trip.items) trip.items = [];
+
+    var added = 0;
+    selectedListsToAdd.forEach(function(listId) {
+        var t = customTypes[listId];
+        if (!t || !t.items) return;
+
+        if (!trip.sources.some(function(s) { return s.id === listId; })) {
+            trip.sources.push({
+                id: listId,
+                name: t.name,
+                emoji: t.emoji || '📋',
+                c1: t.c1 || '#a8e6cf',
+                c2: t.c2 || '#56c596',
+                kind: 'list'
+            });
+        }
+
+        t.items.forEach(function(raw) {
+            var it = normalizeItem(raw);
+            var key = it.text.toLowerCase().trim();
+            var existing = null;
+            for (var i = 0; i < trip.items.length; i++) {
+                if (trip.items[i].text.toLowerCase().trim() === key) { existing = trip.items[i]; break; }
+            }
+            if (existing) {
+                if (!existing.listIds) existing.listIds = [];
+                if (existing.listIds.indexOf(listId) === -1) existing.listIds.push(listId);
+                existing.qty += it.qty;
+            } else {
+                trip.items.push({
+                    text: it.text,
+                    qty: it.qty,
+                    note: it.note,
+                    category: it.category,
+                    from: t.name || '',
+                    listIds: [listId],
+                    done: false
+                });
+            }
+        });
+        added++;
+    });
+
+    saveActive();
+    closeModal('addListToTripModal');
+    renderChecklistPage();
+    vibrate();
+    showToast(added + ' ' + plural(added, 'список добавлен', 'списка добавлено', 'списков добавлено'));
+}
+
 // ============ СОВЕТЫ ============
 function buildTips() {
     try {
@@ -504,10 +628,10 @@ function repeatTrip(h) {
 function renderTypeGrid() {
     var grid = $('typeGrid'); if (!grid) return;
     grid.innerHTML = '';
-    function makeOption(key, t, isCustom) {
+    function makeOption(key, t) {
         var div = document.createElement('div');
         div.className = 'type-option' + (selectedType === key ? ' selected' : '');
-        div.innerHTML = '<span class="checkmark">✓</span><span class="emoji">' + (t.emoji || '🎒') + '</span><span class="name">' + escapeHtml(t.name || 'Тип') + '</span>' + (isCustom ? '<span class="type-badge-custom">свой</span>' : '');
+        div.innerHTML = '<span class="checkmark">✓</span><span class="emoji">' + (t.emoji || '🎒') + '</span><span class="name">' + escapeHtml(t.name || 'Тип') + '</span>';
         div.addEventListener('click', function(e) {
             e.stopPropagation();
             if (selectedType === key) { selectedType = null; }
@@ -517,8 +641,8 @@ function renderTypeGrid() {
         });
         grid.appendChild(div);
     }
-    Object.keys(DEFAULT_TYPES).forEach(function(k) { makeOption(k, DEFAULT_TYPES[k], false); });
-    Object.keys(customTripTypes).forEach(function(k) { makeOption(k, customTripTypes[k], true); });
+    Object.keys(DEFAULT_TYPES).forEach(function(k) { makeOption(k, DEFAULT_TYPES[k]); });
+    Object.keys(customTripTypes).forEach(function(k) { makeOption(k, customTripTypes[k]); });
     var createDiv = document.createElement('div');
     createDiv.className = 'type-option create-new';
     createDiv.innerHTML = '<span class="emoji">➕</span><span class="name">Создать свой</span>';
@@ -630,7 +754,6 @@ function createTrip() {
         }
     }
 
-    // Имя поездки: юзер ввёл → используем; есть тип → имя типа; один список → имя списка; иначе → "Поездка"
     var userInputName = (($('tripName') || {}).value || '').trim();
     var finalName = userInputName;
     if (!finalName) {
@@ -828,7 +951,6 @@ function twiz2Save() {
     closeModal('tripWizardStep2');
     vibrate();
     showToast('Тип «' + twiz.name + '» создан!');
-    // Сразу открываем окно "Новая поездка" — без задержки, чтобы главная не мелькала
     openTypeModal();
 }
 
@@ -1102,12 +1224,10 @@ function renderChecklistPage() {
         var hasSources = trip.sources && trip.sources.length > 0;
 
         if (!hasSources) {
-            // Старые поездки — плоский список
             vis.forEach(function(v) { cont.appendChild(buildSwipeItem(v.item, v.idx)); });
             return;
         }
 
-        // Группировка по спискам
         var grouped = {};
         trip.sources.forEach(function(src) { grouped[src.id] = []; });
 
@@ -1141,24 +1261,31 @@ function renderChecklistPage() {
             hd.className = 'list-header';
             hd.innerHTML = '<span class="list-header-emoji">' + (src.emoji || '📋') + '</span>' +
                            '<span class="list-header-name">' + escapeHtml(src.name || 'Список') + '</span>' +
-                           '<span class="list-header-count">' + doneIn + '/' + totalIn + '</span>';
+                           '<span class="list-header-count">' + doneIn + '/' + totalIn + '</span>' +
+                           '<button type="button" class="list-header-remove" title="Удалить список">✕</button>';
             sec.appendChild(hd);
+
+            var removeBtn = hd.querySelector('.list-header-remove');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    removeListFromTrip(src.id);
+                });
+            }
+
+            attachLongPress(hd, function() {
+                showListHeaderMenu(src.id);
+            }, function() {});
 
             groupItems.forEach(function(v) { sec.appendChild(buildSwipeItem(v.item, v.idx)); });
             cont.appendChild(sec);
         });
 
+        // Вещи без списка — в конце, без заголовка
         if (grouped['__other__'] && grouped['__other__'].length) {
-            var sec2 = document.createElement('div');
-            sec2.className = 'list-section';
-            var hd2 = document.createElement('div');
-            hd2.className = 'list-header';
-            hd2.innerHTML = '<span class="list-header-emoji">📦</span>' +
-                            '<span class="list-header-name">Разное</span>' +
-                            '<span class="list-header-count">' + grouped['__other__'].length + '</span>';
-            sec2.appendChild(hd2);
-            grouped['__other__'].forEach(function(v) { sec2.appendChild(buildSwipeItem(v.item, v.idx)); });
-            cont.appendChild(sec2);
+            grouped['__other__'].forEach(function(v) {
+                cont.appendChild(buildSwipeItem(v.item, v.idx));
+            });
         }
     } catch (e) { bbLogError(3004, 'Ошибка рендера чеклиста', { stack: e.stack }); }
 }
@@ -1272,6 +1399,51 @@ function spawnPlusOne(x, y) {
     el.style.top = (y - 10) + 'px';
     document.body.appendChild(el);
     setTimeout(function() { el.remove(); }, 1100);
+}
+
+// ============ УДАЛЕНИЕ СПИСКА ИЗ ПОЕЗДКИ ============
+function removeListFromTrip(listId) {
+    var trip = getCurrentTrip();
+    if (!trip) return;
+    var itemsToRemove = trip.items.filter(function(i) {
+        if (!i.listIds) return false;
+        return i.listIds.length === 1 && i.listIds.indexOf(listId) !== -1;
+    }).length;
+    var srcName = '';
+    if (trip.sources) {
+        trip.sources.forEach(function(s) { if (s.id === listId) srcName = s.name; });
+    }
+    var msg = 'Удалить список "' + srcName + '" из поездки?\nБудет удалено ' + itemsToRemove + ' ' + plural(itemsToRemove, 'вещь', 'вещи', 'вещей') + '.';
+    if (!confirm(msg)) return;
+
+    if (trip.sources) {
+        trip.sources = trip.sources.filter(function(s) { return s.id !== listId; });
+    }
+
+    trip.items = trip.items.filter(function(i) {
+        if (!i.listIds) return true;
+        var others = i.listIds.filter(function(x) { return x !== listId; });
+        if (others.length === 0) return false;
+        i.listIds = others;
+        return true;
+    });
+
+    saveActive();
+    renderChecklistPage();
+    renderHome();
+    vibrate();
+    showToast('Список удалён');
+}
+
+function showListHeaderMenu(listId) {
+    var trip = getCurrentTrip();
+    if (!trip) return;
+    var srcName = '';
+    if (trip.sources) {
+        trip.sources.forEach(function(s) { if (s.id === listId) srcName = s.name; });
+    }
+    var action = confirm('Список "' + srcName + '"\n\nOK — удалить список\nОтмена — закрыть');
+    if (action) removeListFromTrip(listId);
 }
 
 // ============ ПОГОДА ============
