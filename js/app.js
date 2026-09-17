@@ -1324,17 +1324,37 @@ function renderChecklistPage() {
 function buildSwipeItem(item, idx) {
     var wrap = document.createElement('div');
     wrap.className = 'check-item-wrap';
+
     var ra = document.createElement('div');
     ra.className = 'check-item-actions right';
     ra.innerHTML = '<span>' + (item.done ? '↺' : '✓') + '</span><span>' + (item.done ? 'Сбросить' : 'Готово') + '</span>';
+
     var la = document.createElement('div');
     la.className = 'check-item-actions left';
     la.innerHTML = '<span>Удалить</span><span>🗑</span>';
-    wrap.appendChild(ra); wrap.appendChild(la);
+
+    // Скрываем обе плашки по умолчанию — покажем только нужную при свайпе
+    ra.style.opacity = '0';
+    la.style.opacity = '0';
+    ra.style.transition = 'opacity .1s ease';
+    la.style.transition = 'opacity .1s ease';
+
+    wrap.appendChild(ra);
+    wrap.appendChild(la);
+
     var el = buildCheckItem(item, idx);
     wrap.appendChild(el);
+
     var sx = 0, cx = 0, sw = false, hz = false;
-    el.addEventListener('touchstart', function(e) { sx = e.touches[0].clientX; cx = 0; sw = true; hz = false; el.style.transition = 'none'; }, { passive: true });
+
+    el.addEventListener('touchstart', function(e) {
+        sx = e.touches[0].clientX;
+        cx = 0;
+        sw = true;
+        hz = false;
+        el.style.transition = 'none';
+    }, { passive: true });
+
     el.addEventListener('touchmove', function(e) {
         if (!sw) return;
         var dx = e.touches[0].clientX - sx;
@@ -1344,16 +1364,50 @@ function buildSwipeItem(item, idx) {
         if (dx > SWIPE_ITEM_THRESHOLD * 1.5) dx = SWIPE_ITEM_THRESHOLD * 1.5;
         if (dx < -SWIPE_ITEM_THRESHOLD * 1.5) dx = -SWIPE_ITEM_THRESHOLD * 1.5;
         el.style.transform = 'translateX(' + dx + 'px)';
+        // Показываем только нужную плашку
+        if (dx > 8) { ra.style.opacity = '1'; la.style.opacity = '0'; }
+        else if (dx < -8) { ra.style.opacity = '0'; la.style.opacity = '1'; }
+        else { ra.style.opacity = '0'; la.style.opacity = '0'; }
     }, { passive: true });
+
     el.addEventListener('touchend', function() {
         if (!sw) return;
         sw = false;
         el.style.transition = 'transform .25s cubic-bezier(.4,0,.2,1)';
-        if (cx > SWIPE_ITEM_THRESHOLD) { el.style.transform = 'translateX(0)'; toggleItem(idx); }
-        else if (cx < -SWIPE_ITEM_THRESHOLD) { el.style.transform = 'translateX(-100%)'; setTimeout(function() { deleteActiveItem(idx); }, 200); }
-        else el.style.transform = 'translateX(0)';
+
+        if (cx > SWIPE_ITEM_THRESHOLD) {
+            el.style.transform = 'translateX(0)';
+            ra.style.opacity = '0';
+            la.style.opacity = '0';
+            toggleItem(idx);
+        }
+        else if (cx < -SWIPE_ITEM_THRESHOLD) {
+            el.style.transform = 'translateX(-100%)';
+            // Сразу убираем зелёную плашку (не должна светиться при удалении)
+            ra.style.opacity = '0';
+            setTimeout(function() {
+                // Прячем красную и убираем родителя — чтобы фон не мелькал
+                la.style.opacity = '0';
+                wrap.style.background = 'transparent';
+                deleteActiveItem(idx);
+            }, 150);
+        }
+        else {
+            el.style.transform = 'translateX(0)';
+            ra.style.opacity = '0';
+            la.style.opacity = '0';
+        }
         cx = 0;
     }, { passive: true });
+
+    // Мгновенный сброс при отмене
+    el.addEventListener('touchcancel', function() {
+        sw = false;
+        el.style.transform = 'translateX(0)';
+        ra.style.opacity = '0';
+        la.style.opacity = '0';
+    }, { passive: true });
+
     return wrap;
 }
 
