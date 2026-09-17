@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="myBag">
 <meta name="mobile-web-app-capable" content="yes">
-<title>myBag v2.5.1</title>
+<title>myBag v2.5.2</title>
 
 <link rel="apple-touch-icon" href="Logo.png">
 <link rel="apple-touch-icon" sizes="180x180" href="Logo.png">
@@ -89,10 +89,10 @@
         </div>
         <div class="stats-title">О приложении</div>
         <div class="profile-menu">
-            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.5.1</div></div>
+            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.5.2</div></div>
             <div class="profile-item" id="viewErrorLogBtn"><div class="pi-icon">🐛</div><div class="pi-label">Журнал ошибок</div><div class="pi-value" id="errorCountLabel">0</div><div class="pi-arrow">›</div></div>
         </div>
-        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.5.1</div>
+        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.5.2</div>
     </div>
 </div>
 
@@ -162,10 +162,12 @@
         <div class="field-label">Добавить свои списки <span class="hint">(можно несколько)</span></div>
         <div class="list-picker" id="listPicker"></div>
         <input type="text" class="input-field" id="tripName" placeholder="Название поездки (необязательно)">
-        <div class="field-label">Дата начала (необязательно)</div>
-        <input type="date" class="input-field" id="tripStartDate">
-        <div class="field-label">Дата окончания (необязательно)</div>
-        <input type="date" class="input-field" id="tripEndDate">
+        <div class="field-label">Даты поездки <span class="hint">(необязательно)</span></div>
+        <div class="dates-row">
+            <input type="date" class="input-field" id="tripStartDate" aria-label="Дата начала">
+            <span class="dates-sep">—</span>
+            <input type="date" class="input-field" id="tripEndDate" aria-label="Дата окончания">
+        </div>
         <div class="field-label">Город (для погоды, необязательно)</div>
         <input type="text" class="input-field" id="tripCity" placeholder="Например: Москва">
         <button type="button" class="btn-primary" id="createBtn" disabled>Создать поездку</button>
