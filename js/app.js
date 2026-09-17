@@ -1192,6 +1192,7 @@ function openChecklistPage() {
     if (!trip) return;
     searchQuery = '';
     var si = $('searchInput'); if (si) si.value = '';
+    closeFabMenu();
     var pg = $('checklistPage');
     if (pg) pg.classList.add('active');
     resetUIBlocks();
