@@ -77,7 +77,7 @@ body.dark .tip-ring{background:conic-gradient(from 180deg,#6b8cff,#a06bff,#ff6bc
 .meta-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border-soft)}
 .meta-row:last-child{border-bottom:none;padding-bottom:0}
 .meta-row .meta-key{font-size:11px;color:var(--text-3);font-weight:600}
-.meta-row .meta-val{font-size:15.5px;font-weight:(--text)}
+.meta-row .meta-val{font-size:15.5px;font-weight:800;color:var(--text)}
 .meta-row .meta-val.done{color:var(--success)}
 .meta-row .meta-val.left{color:var(--accent-2)}
 .widget-footer{padding:0 20px 18px;background:var(--card-solid);position:relative;z-index:3}
@@ -130,10 +130,8 @@ body.dark .history-item .h-badge{background:rgba(61,220,132,.15)}
 .checklist-page-title .subtitle{font-size:12px;color:var(--text-3);font-weight:600;margin-top:2px}
 .checklist-page-actions{display:flex;gap:8px;flex-shrink:0}
 .page-action-btn{width:40px;height:40px;border-radius:50%;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;padding:0}
-.checklist-page-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 20px 120px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.checklist-page-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 20px 100px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .checklist-page-content::-webkit-scrollbar{display:none}
-.checklist-page-bottom{position:fixed;bottom:0;left:0;right:0;padding:12px 20px 24px;background:linear-gradient(to top,var(--bg) 60%,transparent);z-index:25;max-width:500px;margin:0 auto;pointer-events:none;display:flex;justify-content:center}
-.checklist-page-bottom .add-to-active{background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);pointer-events:auto;width:100%;cursor:pointer}
 .checklist{margin-top:8px}
 
 /* Секции списков */
@@ -142,6 +140,9 @@ body.dark .history-item .h-badge{background:rgba(61,220,132,.15)}
 .list-header .list-header-emoji{font-size:20px;line-height:1;flex-shrink:0}
 .list-header .list-header-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;letter-spacing:.8px;color:var(--text);font-size:12.5px;font-weight:800}
 .list-header .list-header-count{flex-shrink:0;font-size:12px;font-weight:800;color:var(--text-3);background:var(--card-solid);border:1px solid var(--border-soft);padding:2px 8px;border-radius:100px}
+.list-header-remove{background:transparent;border:none;color:var(--text-3);width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;padding:0;transition:background .15s ease,color .15s ease;-webkit-tap-highlight-color:transparent;margin-left:4px}
+.list-header-remove:active{background:rgba(214,51,108,.15);color:#d6336c}
+body.dark .list-header-remove:active{background:rgba(255,107,139,.2);color:#ff6b8b}
 
 /* Секции по категориям — на всякий случай */
 .cat-section{margin-bottom:18px}
@@ -202,7 +203,35 @@ body.dark .search-highlight{background:rgba(255,210,90,.4);color:#fff}
 .forecast-day .fd-name{font-size:8px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:3px}
 .forecast-day .fd-icon{font-size:16px;margin-bottom:3px}
 .forecast-day .fd-temp{font-size:9.5px;font-weight:700;color:var(--text)}
-.add-to-active{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding:14px;border:1.5px dashed var(--border-soft);border-radius:16px;background:transparent;color:var(--text-2);font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer;width:100%}
 
 /* Фикс — модалка категории поверх других */
 .modal-overlay.on-top2{z-index:9999!important}
+
+/* ============================================================
+   FAB — плавающая кнопка добавления (v2.5.0)
+   ============================================================ */
+.fab-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:40;pointer-events:none;transition:background .25s ease}
+.fab-overlay.active{background:rgba(0,0,0,.35);pointer-events:auto}
+.fab-wrap{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:50;display:flex;flex-direction:column;align-items:flex-end;gap:14px;pointer-events:none}
+.fab-wrap > *{pointer-events:auto}
+.fab-main{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#fff;border:none;font-size:30px;font-weight:300;cursor:pointer;box-shadow:0 8px 24px rgba(255,107,138,.45);display:flex;align-items:center;justify-content:center;position:relative;transition:transform .2s cubic-bezier(.4,0,.2,1),box-shadow .2s ease;padding:0;-webkit-tap-highlight-color:transparent}
+.fab-main:active{transform:scale(.92);box-shadow:0 4px 16px rgba(255,107,138,.4)}
+.fab-icon-plus,
+.fab-icon-close{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transition:opacity .2s ease,transform .25s cubic-bezier(.4,0,.2,1);line-height:1}
+.fab-icon-close{opacity:0;transform:translate(-50%,-50%) rotate(-90deg)}
+.fab-wrap.open .fab-icon-plus{opacity:0;transform:translate(-50%,-50%) rotate(90deg)}
+.fab-wrap.open .fab-icon-close{opacity:1;transform:translate(-50%,-50%) rotate(0)}
+.fab-menu{display:flex;flex-direction:column;gap:10px;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .2s ease,transform .25s cubic-bezier(.4,0,.2,1)}
+.fab-wrap.open .fab-menu{opacity:1;transform:translateY(0);pointer-events:auto}
+.fab-menu-item{background:var(--card);border:1.5px solid var(--border-soft);border-radius:16px;padding:12px 20px 12px 16px;font-family:inherit;font-size:15px;font-weight:700;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px var(--shadow);white-space:nowrap;transition:transform .12s ease,background .15s ease;-webkit-tap-highlight-color:transparent}
+.fab-menu-item:active{transform:scale(.96);background:var(--card-solid)}
+.fab-wrap.open .fab-menu-item:nth-child(1){animation:fabItemIn .3s cubic-bezier(.4,0,.2,1) backwards}
+.fab-wrap.open .fab-menu-item:nth-child(2){animation:fabItemIn .3s cubic-bezier(.4,0,.2,1) .05s backwards}
+@keyframes fabItemIn{
+    from{opacity:0;transform:translateY(8px) scale(.95)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+}
+.fab-menu-icon{font-size:20px;line-height:1;display:inline-flex;align-items:center}
+.fab-menu-label{font-size:15px;font-weight:700;line-height:1}
+body.dark .fab-menu-item{background:var(--card);border-color:var(--border-soft)}
+body.dark .fab-menu-item:active{background:var(--card-solid)}
