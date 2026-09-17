@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Инициализация, обработчики кнопок, запуск приложения
 // Файл: js/main.js
-// Версия: 2.5.1
+// Версия: 2.5.3
 // ============================================================
 
 function bind(id, ev, fn) { var el = $(id); if (el) { try { el.addEventListener(ev, fn); } catch (e) {} } }
@@ -176,19 +176,48 @@ function init() {
             handleCategoryChange(addCat, fallback, 'addItemModal');
         });
 
-        // Свайп в tipViewer (советы)
+        // Свайп в tipViewer:
+        // - горизонтальный → переключение категорий
+        // - быстрый вертикальный вниз (>80px, <300ms, строго вертикально) → закрыть
+        // - медленный вертикальный (скролл текста) → игнорируем
         var tv = $('tipViewer');
         if (tv) {
-            var tStartX = 0, tStartY = 0, tDown = false;
-            tv.addEventListener('touchstart', function(e) { tStartX = e.touches[0].clientX; tStartY = e.touches[0].clientY; tDown = true; }, { passive: true });
+            var tStartX = 0, tStartY = 0, tStartT = 0, tDown = false, tMoved = false, tMovedAt = 0;
+            tv.addEventListener('touchstart', function(e) {
+                tStartX = e.touches[0].clientX;
+                tStartY = e.touches[0].clientY;
+                tStartT = Date.now();
+                tDown = true;
+                tMoved = false;
+                tMovedAt = 0;
+            }, { passive: true });
+            tv.addEventListener('touchmove', function(e) {
+                if (!tDown) return;
+                var dx = Math.abs(e.touches[0].clientX - tStartX);
+                var dy = Math.abs(e.touches[0].clientY - tStartY);
+                if (dx > 10 || dy > 10) {
+                    if (!tMoved) tMovedAt = Date.now();
+                    tMoved = true;
+                }
+            }, { passive: true });
             tv.addEventListener('touchend', function(e) {
                 if (!tDown) return;
                 tDown = false;
+                if (!tMoved) return;
+
                 var dx = e.changedTouches[0].clientX - tStartX;
                 var dy = e.changedTouches[0].clientY - tStartY;
-                if (Math.abs(dy) > 100 && Math.abs(dy) > Math.abs(dx)) { closeTipViewer(); return; }
+                var dt = Date.now() - tStartT;
+
+                // === Быстрый вертикальный свайп вниз → ЗАКРЫТЬ ===
+                if (dy > 80 && Math.abs(dy) > Math.abs(dx) * 2 && dt < 300) {
+                    closeTipViewer();
+                    return;
+                }
+
+                // === Горизонтальный свайп → переключение категорий ===
                 if (tipsMode !== 'cat') return;
-                if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+                if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
                     if (dx < 0 && currentTipIdx < TIPS_CATEGORIES.length - 1) openTipViewer(currentTipIdx + 1);
                     else if (dx > 0 && currentTipIdx > 0) openTipViewer(currentTipIdx - 1);
                 }
