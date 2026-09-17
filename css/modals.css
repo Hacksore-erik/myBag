@@ -12,7 +12,7 @@ body.dark .modal-overlay{background:rgba(0,0,0,.55)}
 
 /* TYPE GRID */
 .type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
-.type-option{padding:12px 6px;border-radius:14px;background:var(--card);border:1.5px solid var(--border-soft);text-align:center;cursor:pointer;position:relative}
+.type-option{padding:12px 4px;border-radius:14px;background:var(--card);border:1.5px solid var(--border-soft);text-align:center;cursor:pointer;position:relative}
 .type-option.selected{background:linear-gradient(135deg,rgba(255,154,90,.2),rgba(255,107,138,.2));border-color:var(--accent-1)}
 body.dark .type-option.selected{background:linear-gradient(135deg,rgba(107,140,255,.25),rgba(160,107,255,.25))}
 .type-option .emoji{font-size:24px;display:block;margin-bottom:4px;line-height:1}
