@@ -36,7 +36,40 @@ function attachLongPress(el, onLong, onClick) {
         if (onClick) onClick(e);
     });
 }
+// ============ FAB ============
+function toggleFabMenu() {
+    var wrap = $('fabWrap');
+    var overlay = $('fabOverlay');
+    if (!wrap) return;
+    var isOpen = wrap.classList.contains('open');
+    if (isOpen) {
+        closeFabMenu();
+    } else {
+        openFabMenu();
+    }
+}
 
+function openFabMenu() {
+    var wrap = $('fabWrap');
+    var overlay = $('fabOverlay');
+    if (!wrap) return;
+    wrap.classList.add('open');
+    if (overlay) overlay.classList.add('active');
+    vibrate();
+    // Автоскролл вверх, чтобы FAB не перекрывал контент
+    var content = document.querySelector('.checklist-page-content');
+    if (content) {
+        try { content.scrollBy({ top: 100, behavior: 'smooth' }); } catch (e) { content.scrollTop += 100; }
+    }
+}
+
+function closeFabMenu() {
+    var wrap = $('fabWrap');
+    var overlay = $('fabOverlay');
+    if (!wrap) return;
+    wrap.classList.remove('open');
+    if (overlay) overlay.classList.remove('active');
+}
 // ============ СОВЕТЫ ============
 function buildTips() {
     try {
