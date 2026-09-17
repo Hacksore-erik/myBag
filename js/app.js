@@ -1200,6 +1200,7 @@ function openChecklistPage() {
 }
 function closeChecklistPage() {
     closeAllModals();
+    closeFabMenu();
     var pg = $('checklistPage'); if (pg) pg.classList.remove('active');
     resetUIBlocks();
     renderHome();
