@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Логика приложения и рендер всех экранов
 // Файл: js/app.js
-// Версия: 2.3.1
+// Версия: 2.4.0
 // ============================================================
 
 // ============ УТИЛИТЫ ============
@@ -471,10 +471,10 @@ function repeatTrip(h) {
 function renderTypeGrid() {
     var grid = $('typeGrid'); if (!grid) return;
     grid.innerHTML = '';
-    function makeOption(key, t) {
+    function makeOption(key, t, isCustom) {
         var div = document.createElement('div');
         div.className = 'type-option' + (selectedType === key ? ' selected' : '');
-        div.innerHTML = '<span class="checkmark">✓</span><span class="emoji">' + (t.emoji || '🎒') + '</span><span class="name">' + escapeHtml(t.name || 'Тип') + '</span>';
+        div.innerHTML = '<span class="checkmark">✓</span><span class="emoji">' + (t.emoji || '🎒') + '</span><span class="name">' + escapeHtml(t.name || 'Тип') + '</span>' + (isCustom ? '<span class="type-badge-custom">свой</span>' : '');
         div.addEventListener('click', function(e) {
             e.stopPropagation();
             if (selectedType === key) { selectedType = null; }
@@ -484,8 +484,8 @@ function renderTypeGrid() {
         });
         grid.appendChild(div);
     }
-    Object.keys(DEFAULT_TYPES).forEach(function(k) { makeOption(k, DEFAULT_TYPES[k]); });
-    Object.keys(customTripTypes).forEach(function(k) { makeOption(k, customTripTypes[k]); });
+    Object.keys(DEFAULT_TYPES).forEach(function(k) { makeOption(k, DEFAULT_TYPES[k], false); });
+    Object.keys(customTripTypes).forEach(function(k) { makeOption(k, customTripTypes[k], true); });
     var createDiv = document.createElement('div');
     createDiv.className = 'type-option create-new';
     createDiv.innerHTML = '<span class="emoji">➕</span><span class="name">Создать свой</span>';
@@ -597,11 +597,7 @@ function createTrip() {
         }
     }
 
-    // === Имя поездки ===
-    // 1. Юзер ввёл сам → используем
-    // 2. Есть тип → имя типа (без суффиксов)
-    // 3. Только один список → имя этого списка
-    // 4. Несколько списков без типа → "Поездка"
+    // Имя поездки: юзер ввёл → используем; есть тип → имя типа; один список → имя списка; иначе → "Поездка"
     var userInputName = (($('tripName') || {}).value || '').trim();
     var finalName = userInputName;
     if (!finalName) {
@@ -801,6 +797,8 @@ function twiz2Save() {
     showToast('Тип «' + twiz.name + '» создан!');
     // Сразу открываем окно "Новая поездка" — без задержки, чтобы главная не мелькала
     openTypeModal();
+}
+
 // ============ ADVANCED ROW ============
 function buildAdvancedRow(item, idx, target) {
     var row = document.createElement('div');
@@ -1503,7 +1501,7 @@ function openCategoryModal(targetSelect, parentModalId) {
     });
     if (categoryParent) {
         var parent = $(categoryParent);
-        if (parent) { parent.classList.remove('active'); parent.style.display = 'none'; }
+        if (parent) { parent.classList.remove('active'); }
     }
     var cm = $('categoryModal');
     if (cm) { cm.classList.add('active'); cm.classList.add('on-top2'); cm.style.display = ''; }
@@ -1515,7 +1513,7 @@ function cancelCategoryCreation() {
     if (categoryParent) {
         var parent = $(categoryParent);
         if (parent) {
-            parent.classList.add('active'); parent.style.display = '';
+            parent.classList.add('active');
             if (categoryParent === 'manageCategoriesModal') renderCatList();
         }
         categoryParent = null;
@@ -1539,7 +1537,7 @@ function saveNewCategory() {
         if (categoryParent) {
             var parent = $(categoryParent);
             if (parent) {
-                parent.classList.add('active'); parent.style.display = '';
+                parent.classList.add('active');
                 if (categoryParent === 'manageCategoriesModal') renderCatList();
             }
             categoryParent = null;
