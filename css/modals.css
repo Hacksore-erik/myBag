@@ -36,6 +36,11 @@ body.dark .type-option.create-new .name{color:#a06bff}
 .list-picker-item .lp-check{width:24px;height:24px;border-radius:50%;border:2px solid var(--border-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:transparent;background:var(--card-solid);transition:all .15s}
 .list-picker-item.selected .lp-check{background:var(--success);border-color:transparent;color:#fff;font-weight:800}
 
+/* DATES ROW */
+.dates-row{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.dates-row .input-field{flex:1;min-width:0;margin-bottom:0}
+.dates-sep{color:var(--text-3);font-weight:700;font-size:14px;flex-shrink:0;user-select:none}
+
 /* FIELDS */
 .input-field{width:100%;padding:16px;border-radius:16px;background:var(--card);border:1.5px solid var(--border-soft);color:var(--text);font-size:16px;font-family:inherit;margin-bottom:16px;outline:none;-webkit-appearance:none;appearance:none}
 .input-field::placeholder{color:var(--text-3);opacity:.7}
