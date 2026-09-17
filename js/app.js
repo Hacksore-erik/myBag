@@ -797,8 +797,10 @@ function twiz2Save() {
     };
     saveCustomTripTypes();
     closeModal('tripWizardStep2');
-    renderHome(); renderProfile(); vibrate();
+    vibrate();
     showToast('Тип «' + twiz.name + '» создан!');
+    // Возвращаемся в окно "Новая поездка" с уже обновлённым списком типов
+    setTimeout(function() { openTypeModal(); }, 300);
 }
 
 // ============ ADVANCED ROW ============
