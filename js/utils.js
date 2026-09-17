@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Утилиты, storage, состояние, шина window.byBag
 // Файл: js/utils.js
-// Версия: 2.0.5
+// Версия: 2.5.1
 // ============================================================
 
 // ============ СОСТОЯНИЕ ============
@@ -10,7 +10,7 @@ var customTripTypes = {};
 var customCategories = {};
 var activeTrips = [], tripHistory = [];
 var currentTripIndex = 0, selectedType = null, selectedListIds = [];
-var profile = { name: 'Эрик', avatar: null };
+var profile = { name: 'Твое имя', avatar: null };
 var settings = { dark: false, notif: true, vibrate: true, hideDone: false };
 var achievementsState = {}, viewedTips = {}, viewedWhatsNew = false;
 var wiz = { name: '', emoji: '👕', colorIdx: 0, items: [] };
@@ -95,8 +95,9 @@ function resetUIBlocks() {
     try { document.body.style.overflow = ''; document.body.style.position = ''; document.body.style.top = ''; document.body.style.width = ''; } catch (e) {}
 }
 
+// ⚠️ ИЗМЕНЕНО: НЕ снимаем above-checklist — это ломало открытие модалок после возврата на главную
 function closeAllModals() {
-    try { document.querySelectorAll('.modal-overlay').forEach(function(m) { m.classList.remove('active'); m.classList.remove('above-checklist'); m.classList.remove('on-top2'); }); } catch (e) {}
+    try { document.querySelectorAll('.modal-overlay').forEach(function(m) { m.classList.remove('active'); m.classList.remove('on-top2'); }); } catch (e) {}
 }
 
 function getCurrentTrip() {
@@ -132,7 +133,7 @@ function loadData() {
     customTypes = loadJSON('bybag_custom_types', {});
     customTripTypes = loadJSON('bybag_custom_trip_types', {});
     customCategories = loadJSON('bybag_custom_categories', {});
-    profile = loadJSON('bybag_profile', { name: 'Эрик', avatar: null });
+    profile = loadJSON('bybag_profile', { name: 'Твое имя', avatar: null });
     settings = loadJSON('bybag_settings', { dark: false, notif: true, vibrate: true, hideDone: false });
     achievementsState = loadJSON('bybag_achievements', {});
     viewedTips = loadJSON('bybag_viewed_tips', {});
@@ -145,7 +146,7 @@ function loadData() {
     if (typeof customTypes !== 'object' || customTypes === null || Array.isArray(customTypes)) customTypes = {};
     if (typeof customTripTypes !== 'object' || customTripTypes === null || Array.isArray(customTripTypes)) customTripTypes = {};
     if (typeof customCategories !== 'object' || customCategories === null || Array.isArray(customCategories)) customCategories = {};
-    if (typeof profile !== 'object' || profile === null) profile = { name: 'Эрик', avatar: null };
+    if (typeof profile !== 'object' || profile === null) profile = { name: 'Твое имя', avatar: null };
     if (typeof settings !== 'object' || settings === null) settings = { dark: false, notif: true, vibrate: true, hideDone: false };
     if (typeof achievementsState !== 'object' || achievementsState === null) achievementsState = {};
     if (typeof viewedTips !== 'object' || viewedTips === null) viewedTips = {};
