@@ -799,10 +799,8 @@ function twiz2Save() {
     closeModal('tripWizardStep2');
     vibrate();
     showToast('Тип «' + twiz.name + '» создан!');
-    // Возвращаемся в окно "Новая поездка" с уже обновлённым списком типов
-    setTimeout(function() { openTypeModal(); }, 300);
-}
-
+    // Сразу открываем окно "Новая поездка" — без задержки, чтобы главная не мелькала
+    openTypeModal();
 // ============ ADVANCED ROW ============
 function buildAdvancedRow(item, idx, target) {
     var row = document.createElement('div');
