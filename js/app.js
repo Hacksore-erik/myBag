@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Логика приложения и рендер всех экранов
 // Файл: js/app.js
-// Версия: 2.5.0
+// Версия: 2.5.1
 // ============================================================
 
 // ============ УТИЛИТЫ ============
@@ -70,128 +70,156 @@ function closeFabMenu() {
 
 // ============ ДОБАВЛЕНИЕ СПИСКА В ПОЕЗДКУ ============
 function openAddListToTripModal() {
-    var trip = getCurrentTrip();
-    if (!trip) { showToast('Нет активной поездки'); return; }
-    var keys = Object.keys(customTypes);
-    if (!keys.length) {
-        showToast('Сначала создайте список в разделе «Списки»');
-        return;
+    try {
+        var trip = getCurrentTrip();
+        if (!trip) { showToast('Нет активной поездки'); return; }
+        var keys = Object.keys(customTypes);
+        if (!keys.length) {
+            showToast('Сначала создайте список в разделе «Списки»');
+            return;
+        }
+        var modal = $('addListToTripModal');
+        if (!modal) {
+            showToast('Ошибка: модалка addListToTripModal не найдена в HTML');
+            bbLogError(9010, 'addListToTripModal отсутствует в HTML');
+            return;
+        }
+        var picker = $('addListToTripPicker');
+        if (!picker) {
+            showToast('Ошибка: addListToTripPicker не найден в HTML');
+            bbLogError(9011, 'addListToTripPicker отсутствует в HTML');
+            return;
+        }
+        selectedListsToAdd = [];
+        renderAddListToTripPicker();
+        openModal('addListToTripModal');
+    } catch (e) {
+        bbLogError(9012, 'Ошибка openAddListToTripModal: ' + e.message, { stack: e.stack });
+        showToast('Ошибка: ' + e.message);
     }
-    selectedListsToAdd = [];
-    renderAddListToTripPicker();
-    openModal('addListToTripModal');
 }
 
 function renderAddListToTripPicker() {
-    var p = $('addListToTripPicker'); if (!p) return;
-    p.innerHTML = '';
-    var trip = getCurrentTrip();
-    if (!trip) return;
-    var inTrip = {};
-    if (trip.sources) trip.sources.forEach(function(s) { inTrip[s.id] = true; });
+    try {
+        var p = $('addListToTripPicker'); if (!p) return;
+        p.innerHTML = '';
+        var trip = getCurrentTrip();
+        if (!trip) return;
+        var inTrip = {};
+        if (trip.sources) trip.sources.forEach(function(s) { inTrip[s.id] = true; });
 
-    var keys = Object.keys(customTypes);
-    var availableCount = 0;
+        var keys = Object.keys(customTypes);
+        var availableCount = 0;
 
-    keys.forEach(function(key) {
-        var t = customTypes[key];
-        var alreadyIn = !!inTrip[key];
-        var isSel = selectedListsToAdd.indexOf(key) !== -1;
+        keys.forEach(function(key) {
+            var t = customTypes[key];
+            var tItems = t.items || [];
+            var alreadyIn = !!inTrip[key];
+            var isSel = selectedListsToAdd.indexOf(key) !== -1;
 
-        var item = document.createElement('div');
-        item.className = 'list-picker-item' + (isSel ? ' selected' : '') + (alreadyIn ? ' disabled' : '');
-        item.innerHTML =
-            '<div class="lp-emoji">' + (t.emoji || '👕') + '</div>' +
-            '<div class="lp-body">' +
-                '<div class="lp-name">' + escapeHtml(t.name || 'Список') + '</div>' +
-                '<div class="lp-meta">' + t.items.length + ' ' + plural(t.items.length, 'вещь', 'вещи', 'вещей') + (alreadyIn ? ' · уже в поездке' : '') + '</div>' +
-            '</div>' +
-            '<div class="lp-check">✓</div>';
+            var item = document.createElement('div');
+            item.className = 'list-picker-item' + (isSel ? ' selected' : '') + (alreadyIn ? ' disabled' : '');
+            item.innerHTML =
+                '<div class="lp-emoji">' + (t.emoji || '👕') + '</div>' +
+                '<div class="lp-body">' +
+                    '<div class="lp-name">' + escapeHtml(t.name || 'Список') + '</div>' +
+                    '<div class="lp-meta">' + tItems.length + ' ' + plural(tItems.length, 'вещь', 'вещи', 'вещей') + (alreadyIn ? ' · уже в поездке' : '') + '</div>' +
+                '</div>' +
+                '<div class="lp-check">✓</div>';
 
-        if (!alreadyIn) {
-            availableCount++;
-            item.addEventListener('click', function() {
-                var i = selectedListsToAdd.indexOf(key);
-                if (i === -1) selectedListsToAdd.push(key);
-                else selectedListsToAdd.splice(i, 1);
-                renderAddListToTripPicker();
-            });
-        } else {
-            item.style.opacity = '.4';
-            item.style.pointerEvents = 'none';
+            if (!alreadyIn) {
+                availableCount++;
+                item.addEventListener('click', function() {
+                    var i = selectedListsToAdd.indexOf(key);
+                    if (i === -1) selectedListsToAdd.push(key);
+                    else selectedListsToAdd.splice(i, 1);
+                    renderAddListToTripPicker();
+                });
+            } else {
+                item.style.opacity = '.4';
+                item.style.pointerEvents = 'none';
+            }
+            p.appendChild(item);
+        });
+
+        if (!availableCount) {
+            var emp = document.createElement('div');
+            emp.style.cssText = 'text-align:center;padding:20px;color:var(--text-3);font-size:13.5px;font-weight:500';
+            emp.textContent = 'Все списки уже в поездке';
+            p.appendChild(emp);
         }
-        p.appendChild(item);
-    });
 
-    if (!availableCount) {
-        var emp = document.createElement('div');
-        emp.style.cssText = 'text-align:center;padding:20px;color:var(--text-3);font-size:13.5px;font-weight:500';
-        emp.textContent = 'Все списки уже в поездке';
-        p.appendChild(emp);
-    }
-
-    var btn = $('addListToTripConfirmBtn');
-    if (btn) {
-        btn.disabled = !selectedListsToAdd.length;
-        btn.textContent = selectedListsToAdd.length ? 'Добавить (' + selectedListsToAdd.length + ')' : 'Добавить в поездку';
+        var btn = $('addListToTripConfirmBtn');
+        if (btn) {
+            btn.disabled = !selectedListsToAdd.length;
+            btn.textContent = selectedListsToAdd.length ? 'Добавить (' + selectedListsToAdd.length + ')' : 'Добавить в поездку';
+        }
+    } catch (e) {
+        bbLogError(9013, 'Ошибка renderAddListToTripPicker: ' + e.message, { stack: e.stack });
+        showToast('Ошибка рендера: ' + e.message);
     }
 }
 
 function confirmAddListToTrip() {
-    var trip = getCurrentTrip();
-    if (!trip) return;
-    if (!selectedListsToAdd.length) { showToast('Выберите список'); return; }
+    try {
+        var trip = getCurrentTrip();
+        if (!trip) return;
+        if (!selectedListsToAdd.length) { showToast('Выберите список'); return; }
 
-    if (!trip.sources) trip.sources = [];
-    if (!trip.items) trip.items = [];
+        if (!trip.sources) trip.sources = [];
+        if (!trip.items) trip.items = [];
 
-    var added = 0;
-    selectedListsToAdd.forEach(function(listId) {
-        var t = customTypes[listId];
-        if (!t || !t.items) return;
+        var added = 0;
+        selectedListsToAdd.forEach(function(listId) {
+            var t = customTypes[listId];
+            if (!t || !t.items) return;
 
-        if (!trip.sources.some(function(s) { return s.id === listId; })) {
-            trip.sources.push({
-                id: listId,
-                name: t.name,
-                emoji: t.emoji || '📋',
-                c1: t.c1 || '#a8e6cf',
-                c2: t.c2 || '#56c596',
-                kind: 'list'
-            });
-        }
-
-        t.items.forEach(function(raw) {
-            var it = normalizeItem(raw);
-            var key = it.text.toLowerCase().trim();
-            var existing = null;
-            for (var i = 0; i < trip.items.length; i++) {
-                if (trip.items[i].text.toLowerCase().trim() === key) { existing = trip.items[i]; break; }
-            }
-            if (existing) {
-                if (!existing.listIds) existing.listIds = [];
-                if (existing.listIds.indexOf(listId) === -1) existing.listIds.push(listId);
-                existing.qty += it.qty;
-            } else {
-                trip.items.push({
-                    text: it.text,
-                    qty: it.qty,
-                    note: it.note,
-                    category: it.category,
-                    from: t.name || '',
-                    listIds: [listId],
-                    done: false
+            if (!trip.sources.some(function(s) { return s.id === listId; })) {
+                trip.sources.push({
+                    id: listId,
+                    name: t.name,
+                    emoji: t.emoji || '📋',
+                    c1: t.c1 || '#a8e6cf',
+                    c2: t.c2 || '#56c596',
+                    kind: 'list'
                 });
             }
-        });
-        added++;
-    });
 
-    saveActive();
-    closeModal('addListToTripModal');
-    renderChecklistPage();
-    vibrate();
-    showToast(added + ' ' + plural(added, 'список добавлен', 'списка добавлено', 'списков добавлено'));
+            t.items.forEach(function(raw) {
+                var it = normalizeItem(raw);
+                var key = it.text.toLowerCase().trim();
+                var existing = null;
+                for (var i = 0; i < trip.items.length; i++) {
+                    if (trip.items[i].text.toLowerCase().trim() === key) { existing = trip.items[i]; break; }
+                }
+                if (existing) {
+                    if (!existing.listIds) existing.listIds = [];
+                    if (existing.listIds.indexOf(listId) === -1) existing.listIds.push(listId);
+                    existing.qty += it.qty;
+                } else {
+                    trip.items.push({
+                        text: it.text,
+                        qty: it.qty,
+                        note: it.note,
+                        category: it.category,
+                        from: t.name || '',
+                        listIds: [listId],
+                        done: false
+                    });
+                }
+            });
+            added++;
+        });
+
+        saveActive();
+        closeModal('addListToTripModal');
+        renderChecklistPage();
+        vibrate();
+        showToast(added + ' ' + plural(added, 'список добавлен', 'списка добавлено', 'списков добавлено'));
+    } catch (e) {
+        bbLogError(9014, 'Ошибка confirmAddListToTrip: ' + e.message, { stack: e.stack });
+        showToast('Ошибка добавления: ' + e.message);
+    }
 }
 
 // ============ СОВЕТЫ ============
