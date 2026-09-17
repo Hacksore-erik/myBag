@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Инициализация, обработчики кнопок, запуск приложения
 // Файл: js/main.js
-// Версия: 2.5.0
+// Версия: 2.5.1
 // ============================================================
 
 function bind(id, ev, fn) { var el = $(id); if (el) { try { el.addEventListener(ev, fn); } catch (e) {} } }
@@ -49,13 +49,30 @@ function init() {
         bind('fabOverlay', 'click', closeFabMenu);
         bind('fabItemItem', 'click', function() {
             closeFabMenu();
-            openAddItemModal();
+            try {
+                if (typeof openAddItemModal === 'function') openAddItemModal();
+                else showToast('Ошибка: openAddItemModal не найдена');
+            } catch (e) { showToast('Ошибка: ' + e.message); }
         });
         bind('fabItemList', 'click', function() {
             closeFabMenu();
-            openAddListToTripModal();
+            try {
+                if (typeof openAddListToTripModal === 'function') {
+                    openAddListToTripModal();
+                } else {
+                    showToast('Ошибка: openAddListToTripModal не найдена');
+                }
+            } catch (e) {
+                showToast('Ошибка: ' + e.message);
+                bbLogError(9020, 'Ошибка клика fabItemList: ' + e.message, { stack: e.stack });
+            }
         });
-        bind('addListToTripConfirmBtn', 'click', confirmAddListToTrip);
+        bind('addListToTripConfirmBtn', 'click', function() {
+            try {
+                if (typeof confirmAddListToTrip === 'function') confirmAddListToTrip();
+                else showToast('Ошибка: confirmAddListToTrip не найдена');
+            } catch (e) { showToast('Ошибка: ' + e.message); }
+        });
 
         // Поиск и скрытие
         bind('searchInput', 'input', function() {
