@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="myBag">
 <meta name="mobile-web-app-capable" content="yes">
-<title>myBag v2.1.0</title>
+<title>myBag v2.5.0</title>
 
 <link rel="apple-touch-icon" href="Logo.png">
 <link rel="apple-touch-icon" sizes="180x180" href="Logo.png">
@@ -89,10 +89,10 @@
         </div>
         <div class="stats-title">О приложении</div>
         <div class="profile-menu">
-            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.1.0</div></div>
+            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.5.0</div></div>
             <div class="profile-item" id="viewErrorLogBtn"><div class="pi-icon">🐛</div><div class="pi-label">Журнал ошибок</div><div class="pi-value" id="errorCountLabel">0</div><div class="pi-arrow">›</div></div>
         </div>
-        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.1.0</div>
+        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.5.0</div>
     </div>
 </div>
 
@@ -132,8 +132,23 @@
         </div>
         <div class="checklist" id="checklistContainer"></div>
     </div>
-    <div class="checklist-page-bottom">
-        <button type="button" class="add-to-active" id="addToActiveBtn">+ Добавить вещь в поездку</button>
+
+    <div class="fab-overlay" id="fabOverlay"></div>
+    <div class="fab-wrap" id="fabWrap">
+        <div class="fab-menu" id="fabMenu">
+            <button type="button" class="fab-menu-item" id="fabItemItem">
+                <span class="fab-menu-icon">📦</span>
+                <span class="fab-menu-label">Вещь</span>
+            </button>
+            <button type="button" class="fab-menu-item" id="fabItemList">
+                <span class="fab-menu-icon">📋</span>
+                <span class="fab-menu-label">Список</span>
+            </button>
+        </div>
+        <button type="button" class="fab-main" id="fabMainBtn">
+            <span class="fab-icon-plus">+</span>
+            <span class="fab-icon-close">✕</span>
+        </button>
     </div>
 </div>
 
