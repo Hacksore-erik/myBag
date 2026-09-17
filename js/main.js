@@ -1,200 +1,454 @@
-// ============================================================
-// myBag — Инициализация, обработчики кнопок, запуск приложения
-// Файл: js/main.js
-// Версия: 2.5.0
-// ============================================================
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="myBag">
+<meta name="mobile-web-app-capable" content="yes">
+<title>myBag v2.5.0</title>
 
-function bind(id, ev, fn) { var el = $(id); if (el) { try { el.addEventListener(ev, fn); } catch (e) {} } }
+<link rel="apple-touch-icon" href="Logo.png">
+<link rel="apple-touch-icon" sizes="180x180" href="Logo.png">
+<link rel="apple-touch-icon" sizes="192x192" href="Logo.png">
+<link rel="apple-touch-icon" sizes="512x512" href="Logo.png">
+<link rel="icon" type="image/png" sizes="192x192" href="Logo.png">
+<link rel="icon" type="image/png" sizes="512x512" href="Logo.png">
+<link rel="icon" type="image/png" href="Logo.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff9a5a">
 
-function init() {
-    try {
-        loadData();
-        applyTheme();
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/home.css">
+<link rel="stylesheet" href="css/modals.css">
+</head>
+<body>
 
-        // Закрытие модалок по кнопке ✕
-        document.querySelectorAll('[data-close]').forEach(function(b) {
-            b.addEventListener('click', function() {
-                var id = b.getAttribute('data-close');
-                if (id === 'addItemModal') closeAddItemModal(); else closeModal(id);
-            });
-        });
+<div id="errorScreen">
+    <div class="err-icon">😕</div>
+    <div class="err-code" id="errCode">Код: BB-9001</div>
+    <h2 id="errTitle">Что-то пошло не так</h2>
+    <p>Ничего страшного — скопируйте отчёт и отправьте разработчику.</p>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:14px">
+        <button id="errCopyBtn" type="button">📋 Скопировать отчёт</button>
+        <button onclick="downloadErrorLog()" type="button" style="background:var(--card);color:var(--text)">💾 Журнал</button>
+        <button onclick="location.reload()" type="button" style="background:var(--card);color:var(--text)">🔄 Обновить</button>
+        <button onclick="hardReset()" type="button" style="background:rgba(214,51,108,.15);color:var(--danger)">🗑 Сброс</button>
+    </div>
+    <div class="err-msg" id="errMsg"></div>
+</div>
 
-        // Закрытие модалок по клику на фон
-        ['typeModal','editProfileModal','listEditorModal','addItemModal','wizardStep1','wizardStep2','tripWizardStep1','tripWizardStep2','advancedItemModal','advancedItemModal2','manageCategoriesModal','errorLogModal'].forEach(function(id) {
-            var el = $(id);
-            if (el) el.addEventListener('click', function(e) {
-                if (e.target === this) { if (id === 'addItemModal') closeAddItemModal(); else closeModal(id); }
-            });
-        });
+<div class="app-header"><div class="logo">myBag</div></div>
+<div class="header-spacer"></div>
 
-        // Category modal — отдельная логика возврата родителя
-        var catOverlay = $('categoryModal');
-        if (catOverlay) catOverlay.addEventListener('click', function(e) { if (e.target === this) cancelCategoryCreation(); });
-        bind('categoryCloseBtn', 'click', cancelCategoryCreation);
+<div class="page active" id="page-home">
+    <div class="container">
+        <div id="tipsSlot"></div>
+        <div id="widgetSlot"></div>
+        <div id="historySlot"></div>
+    </div>
+</div>
 
-        // Нижняя навигация
-        document.querySelectorAll('.nav-item').forEach(function(n) {
-            n.addEventListener('click', function() { switchPage(n.getAttribute('data-page')); });
-        });
+<div class="page" id="page-lists">
+    <div class="container">
+        <div style="height:14px"></div>
+        <div id="listsPageContent"></div>
+        <button type="button" class="btn-primary" id="createNewListBtn" style="margin-top:8px">+ Создать новый список</button>
+    </div>
+</div>
 
-        // Основные кнопки
-        bind('createBtn', 'click', createTrip);
-        bind('checklistBackBtn', 'click', closeChecklistPage);
-        bind('checklistShareBtn', 'click', shareActiveTrip);
-        bind('confirmAddItemBtn', 'click', confirmAddItem);
-        bind('createNewListBtn', 'click', startWizard);
+<div class="page" id="page-profile">
+    <div class="container">
+        <div class="profile-hero">
+            <div class="profile-avatar" id="profileAvatar">
+                <span id="profileAvatarLetter">Э</span>
+                <span class="avatar-edit"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
+            </div>
+            <div class="profile-info">
+                <h2 id="profileName">Эрик</h2>
+                <div class="profile-badge">⭐ Premium</div>
+            </div>
+        </div>
+        <div class="stats-title">Моя статистика</div>
+        <div class="profile-stats">
+            <div class="profile-stat-card"><div class="ps-icon">🧳</div><div class="ps-num" id="profileTotalTrips">0</div><div class="ps-label">Всего поездок</div></div>
+            <div class="profile-stat-card"><div class="ps-icon">✅</div><div class="ps-num" id="profileCompletedTrips">0</div><div class="ps-label">Завершено</div></div>
+            <div class="profile-stat-card"><div class="ps-icon">📦</div><div class="ps-num" id="profileItemsPacked">0</div><div class="ps-label">Вещей собрано</div></div>
+        </div>
+        <div class="stats-title">Достижения</div>
+        <div class="achievements-grid" id="achievementsGrid"></div>
+        <div class="stats-title">Настройки</div>
+        <div class="profile-menu">
+            <div class="profile-item" id="editProfileBtn"><div class="pi-icon">✏️</div><div class="pi-label">Редактировать профиль</div><div class="pi-arrow">›</div></div>
+            <div class="profile-item" id="manageCategoriesBtn"><div class="pi-icon">🏷️</div><div class="pi-label">Мои категории</div><div class="pi-value" id="catCountLabel">0</div><div class="pi-arrow">›</div></div>
+            <div class="profile-item" id="darkModeToggleItem"><div class="pi-icon">🌙</div><div class="pi-label">Тёмная тема</div><div class="toggle" id="darkToggle"></div></div>
+            <div class="profile-item" id="notifToggleItem"><div class="pi-icon">🔔</div><div class="pi-label">Напоминания</div><div class="toggle" id="notifToggle"></div></div>
+            <div class="profile-item" id="vibrateToggleItem"><div class="pi-icon">📳</div><div class="pi-label">Вибрация</div><div class="toggle" id="vibrateToggle"></div></div>
+            <div class="profile-item" id="showOnboardingBtn"><div class="pi-icon">📖</div><div class="pi-label">О приложении</div><div class="pi-arrow">›</div></div>
+        </div>
+        <div class="stats-title">О приложении</div>
+        <div class="profile-menu">
+            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.5.0</div></div>
+            <div class="profile-item" id="viewErrorLogBtn"><div class="pi-icon">🐛</div><div class="pi-label">Журнал ошибок</div><div class="pi-value" id="errorCountLabel">0</div><div class="pi-arrow">›</div></div>
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.5.0</div>
+    </div>
+</div>
 
-        // FAB (плавающая кнопка добавления)
-        bind('fabMainBtn', 'click', toggleFabMenu);
-        bind('fabOverlay', 'click', closeFabMenu);
-        bind('fabItemItem', 'click', function() {
-            closeFabMenu();
-            openAddItemModal();
-        });
-        bind('fabItemList', 'click', function() {
-            closeFabMenu();
-            openAddListToTripModal();
-        });
+<div class="bottom-nav">
+    <button type="button" class="nav-item active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-label">Главная</span></button>
+    <button type="button" class="nav-item" data-page="lists"><span class="nav-icon">📋</span><span class="nav-label">Списки</span></button>
+    <button type="button" class="nav-item" data-page="profile"><span class="nav-icon">👤</span><span class="nav-label">Профиль</span></button>
+</div>
 
-        // Поиск и скрытие
-        bind('searchInput', 'input', function() {
-            var v = this.value;
-            clearTimeout(searchDebounceTimer);
-            searchDebounceTimer = setTimeout(function() { searchQuery = v; renderChecklistPage(); }, 150);
-        });
-        bind('hideDoneToggle', 'click', function() { settings.hideDone = !settings.hideDone; saveSettings(); renderChecklistPage(); });
+<div class="checklist-page" id="checklistPage">
+    <div class="checklist-page-header">
+        <button type="button" class="back-btn" id="checklistBackBtn">←</button>
+        <div class="checklist-page-title">
+            <h2 id="checklistPageTitle">Сбор багажа</h2>
+            <div class="subtitle" id="checklistPageSubtitle"></div>
+        </div>
+        <div class="checklist-page-actions"><button type="button" class="page-action-btn" id="checklistShareBtn">📤</button></div>
+    </div>
+    <div class="checklist-page-content">
+        <div class="modal-progress">
+            <div class="progress-label"><span>Собрано вещей</span><span id="tripProgressText">0 / 0</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="tripProgressFill" style="width:0%"></div></div>
+        </div>
+        <div class="weather-card" id="weatherCard">
+            <div class="weather-header">
+                <div class="w-icon" id="weatherIcon">☀️</div>
+                <div class="w-city" id="weatherCity">--</div>
+                <div class="w-temp" id="weatherTemp">--</div>
+            </div>
+            <div class="weather-desc" id="weatherDesc">Загрузка...</div>
+            <div class="weather-forecast" id="weatherForecast"></div>
+        </div>
+        <div class="checklist-toolbar">
+            <input type="text" class="input-field" id="searchInput" placeholder="🔍 Поиск по вещам...">
+            <button type="button" class="toolbar-btn" id="collapseAllBtn" style="display:none" title="Свернуть все">⌃</button>
+            <button type="button" class="toolbar-toggle" id="hideDoneToggle"><span>👁</span></button>
+        </div>
+        <div class="checklist" id="checklistContainer"></div>
+    </div>
 
-        // Мастер списка
-        bind('wiz1NameInput', 'input', function() {
-            var nb = $('wiz1NextBtn'); if (nb) nb.disabled = !this.value.trim();
-            updateWiz1Preview();
-        });
-        bind('wiz1NextBtn', 'click', wiz1Next);
-        bind('wiz2AddBtn', 'click', wiz2AddQuick);
-        bind('wiz2NewItem', 'keypress', function(e) { if (e.key === 'Enter') wiz2AddQuick(); });
-        bind('wiz2AdvancedBtn', 'click', function() { openAdvanced('wizard'); });
-        bind('wiz2SaveBtn', 'click', wiz2Save);
-        bind('wiz2BackBtn', 'click', function() { closeModal('wizardStep2'); openModal('wizardStep1'); });
+    <div class="fab-overlay" id="fabOverlay"></div>
+    <div class="fab-wrap" id="fabWrap">
+        <div class="fab-menu" id="fabMenu">
+            <button type="button" class="fab-menu-item" id="fabItemItem">
+                <span class="fab-menu-icon">📦</span>
+                <span class="fab-menu-label">Вещь</span>
+            </button>
+            <button type="button" class="fab-menu-item" id="fabItemList">
+                <span class="fab-menu-icon">📋</span>
+                <span class="fab-menu-label">Список</span>
+            </button>
+        </div>
+        <button type="button" class="fab-main" id="fabMainBtn">
+            <span class="fab-icon-plus">+</span>
+            <span class="fab-icon-close">✕</span>
+        </button>
+    </div>
+</div>
 
-        // Мастер типа
-        bind('twiz1NameInput', 'input', function() {
-            var nb = $('twiz1NextBtn'); if (nb) nb.disabled = !this.value.trim();
-            updateTwiz1Preview();
-        });
-        bind('twiz1NextBtn', 'click', twiz1Next);
-        bind('twiz2AddBtn', 'click', twiz2AddQuick);
-        bind('twiz2NewItem', 'keypress', function(e) { if (e.key === 'Enter') twiz2AddQuick(); });
-        bind('twiz2AdvancedBtn', 'click', function() { openAdvanced('twiz'); });
-        bind('twiz2SaveBtn', 'click', twiz2Save);
-        bind('twiz2BackBtn', 'click', function() { closeModal('tripWizardStep2'); openModal('tripWizardStep1'); });
+<div class="modal-overlay" id="typeModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="typeModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Новая поездка</h2>
+        <div class="field-label">Базовый тип <span class="hint">(необязательно)</span></div>
+        <div class="type-grid" id="typeGrid"></div>
+        <div class="field-label">Добавить свои списки <span class="hint">(можно несколько)</span></div>
+        <div class="list-picker" id="listPicker"></div>
+        <input type="text" class="input-field" id="tripName" placeholder="Название поездки (необязательно)">
+        <div class="field-label">Дата начала (необязательно)</div>
+        <input type="date" class="input-field" id="tripStartDate">
+        <div class="field-label">Дата окончания (необязательно)</div>
+        <input type="date" class="input-field" id="tripEndDate">
+        <div class="field-label">Город (для погоды, необязательно)</div>
+        <input type="text" class="input-field" id="tripCity" placeholder="Например: Москва">
+        <button type="button" class="btn-primary" id="createBtn" disabled>Создать поездку</button>
+    </div>
+</div>
 
-        // Advanced Item (добавить вещь подробно)
-        bind('advConfirmBtn', 'click', advConfirm);
-        bind('adv2ConfirmBtn', 'click', adv2Confirm);
+<div class="modal-overlay" id="wizardStep1">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="wizardStep1">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Новый список</h2>
+        <div class="preview-card" id="wiz1Preview" style="background:linear-gradient(135deg,#a8e6cf,#56c596)">
+            <div class="preview-emoji" id="wiz1Emoji">👕</div>
+            <div class="preview-name" id="wiz1Name">Название списка</div>
+            <div class="preview-count" id="wiz1Count">0 вещей</div>
+        </div>
+        <div class="field-label">Название списка</div>
+        <input type="text" class="input-field" id="wiz1NameInput" placeholder="Например: Аптечка" maxlength="30">
+        <div class="field-label">Иконка</div>
+        <div class="emoji-picker" id="wiz1EmojiPicker"></div>
+        <div class="field-label">Цветовая палитра</div>
+        <div class="color-picker" id="wiz1ColorPicker"></div>
+        <button type="button" class="btn-primary" id="wiz1NextBtn" disabled>Далее →</button>
+    </div>
+</div>
 
-        // Редактор списка
-        bind('addItemBtn', 'click', editorAddQuick);
-        bind('newItemInput', 'keypress', function(e) { if (e.key === 'Enter') editorAddQuick(); });
-        bind('listName', 'input', updateEditorPreview);
-        bind('saveListBtn', 'click', saveEditor);
-        bind('deleteListBtn', 'click', deleteEditingList);
-        bind('listAdvancedBtn', 'click', function() { openAdvanced('editor'); });
+<div class="modal-overlay" id="wizardStep2">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="wizardStep2">✕</button>
+        <div class="modal-handle"></div>
+        <div class="preview-card" id="wiz2Preview" style="background:linear-gradient(135deg,#a8e6cf,#56c596);margin-bottom:20px">
+            <div class="preview-emoji" id="wiz2Emoji">👕</div>
+            <div class="preview-name" id="wiz2Name">Название списка</div>
+            <div class="preview-count" id="wiz2Count">0 вещей</div>
+        </div>
+        <div class="field-label">Вещи в списке</div>
+        <div id="wiz2ItemsEditor"></div>
+        <div class="field-label">Быстрое добавление</div>
+        <div class="add-item-row">
+            <input type="text" class="input-field" id="wiz2NewItem" placeholder="Название вещи..." maxlength="60">
+            <button type="button" class="add-item-btn" id="wiz2AddBtn">+</button>
+        </div>
+        <button type="button" class="btn-secondary" id="wiz2AdvancedBtn">+ Вещь со всеми полями</button>
+        <button type="button" class="btn-primary" id="wiz2SaveBtn" style="margin-top:14px">Сохранить список</button>
+        <button type="button" class="btn-secondary" id="wiz2BackBtn">← Назад</button>
+    </div>
+</div>
 
-        // Профиль
-        bind('editProfileBtn', 'click', openEditProfile);
-        bind('profileAvatar', 'click', openEditProfile);
-        bind('saveProfileBtn', 'click', saveProfileChanges);
-        bind('avatarInput', 'change', handleAvatarUpload);
-        bind('editAvatar', 'click', function() { var a = $('avatarInput'); if (a) a.click(); });
-        bind('resetAvatarBtn', 'click', resetAvatar);
+<div class="modal-overlay" id="tripWizardStep1">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="tripWizardStep1">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Новый тип поездки</h2>
+        <div class="preview-card" id="twiz1Preview" style="background:linear-gradient(135deg,#ffb347,#ff7e5f)">
+            <div class="preview-emoji" id="twiz1Emoji">🏖️</div>
+            <div class="preview-name" id="twiz1Name">Название типа</div>
+            <div class="preview-count" id="twiz1Count">0 вещей</div>
+        </div>
+        <div class="field-label">Название типа поездки</div>
+        <input type="text" class="input-field" id="twiz1NameInput" placeholder="Например: Кемпинг" maxlength="30">
+        <div class="field-label">Иконка</div>
+        <div class="emoji-picker" id="twiz1EmojiPicker"></div>
+        <div class="field-label">Цветовая палитра</div>
+        <div class="color-picker" id="twiz1ColorPicker"></div>
+        <button type="button" class="btn-primary" id="twiz1NextBtn" disabled>Далее →</button>
+    </div>
+</div>
 
-        // Настройки
-        bind('darkModeToggleItem', 'click', function() { settings.dark = !settings.dark; saveSettings(); applyTheme(); });
-        bind('notifToggleItem', 'click', function() {
-            settings.notif = !settings.notif; saveSettings(); applyTheme();
-            if (settings.notif && 'Notification' in window && Notification.permission === 'default') { try { Notification.requestPermission(); } catch (e) {} }
-        });
-        bind('vibrateToggleItem', 'click', function() { settings.vibrate = !settings.vibrate; saveSettings(); applyTheme(); vibrate(); });
+<div class="modal-overlay" id="tripWizardStep2">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="tripWizardStep2">✕</button>
+        <div class="modal-handle"></div>
+        <div class="preview-card" id="twiz2Preview" style="background:linear-gradient(135deg,#ffb347,#ff7e5f);margin-bottom:20px">
+            <div class="preview-emoji" id="twiz2Emoji">🏖️</div>
+            <div class="preview-name" id="twiz2Name">Название типа</div>
+            <div class="preview-count" id="twiz2Count">0 вещей</div>
+        </div>
+        <div class="field-label">Стартовый набор вещей <span class="hint">(необязательно)</span></div>
+        <div id="twiz2ItemsEditor"></div>
+        <div class="add-item-row">
+            <input type="text" class="input-field" id="twiz2NewItem" placeholder="Название вещи..." maxlength="60">
+            <button type="button" class="add-item-btn" id="twiz2AddBtn">+</button>
+        </div>
+        <button type="button" class="btn-secondary" id="twiz2AdvancedBtn">+ Вещь со всеми полями</button>
+        <button type="button" class="btn-primary" id="twiz2SaveBtn" style="margin-top:14px">Сохранить тип</button>
+        <button type="button" class="btn-secondary" id="twiz2BackBtn">← Назад</button>
+    </div>
+</div>
 
-        // Онбординг
-        bind('showOnboardingBtn', 'click', showOnboarding);
-        bind('onbNextBtn', 'click', nextOnbSlide);
-        bind('onbSkipBtn', 'click', function() {
-            hideOnboarding();
-            if (!localStorage.getItem('bybag_notif_asked')) setTimeout(showNotifOnboarding, 600);
-        });
+<div class="modal-overlay" id="advancedItemModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="advancedItemModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Подробно о вещи</h2>
+        <div class="field-label">Название</div>
+        <input type="text" class="input-field" id="advName" placeholder="Например: Зубная щётка" maxlength="60">
+        <div class="field-label">Категория</div>
+        <select class="input-field" id="advCat"></select>
+        <div class="field-label">Количество</div>
+        <input type="number" class="input-field" id="advQty" value="1" min="1" max="99">
+        <div class="field-label">Заметка</div>
+        <input type="text" class="input-field" id="advNote" placeholder="Например: та, что с Type-C" maxlength="60">
+        <button type="button" class="btn-primary" id="advConfirmBtn">Добавить</button>
+    </div>
+</div>
 
-        // TipViewer (советы / что нового)
-        bind('tipViewerClose', 'click', closeTipViewer);
+<div class="modal-overlay" id="listEditorModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="listEditorModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2 id="listEditorTitle">Редактировать список</h2>
+        <div class="preview-card" id="previewCard">
+            <div class="preview-emoji" id="previewEmoji">👕</div>
+            <div class="preview-name" id="previewName">Название списка</div>
+            <div class="preview-count" id="previewCount">0 вещей</div>
+        </div>
+        <div class="field-label">Название</div>
+        <input type="text" class="input-field" id="listName" placeholder="Название" maxlength="30">
+        <div class="field-label">Иконка</div>
+        <div class="emoji-picker" id="emojiPicker"></div>
+        <div class="field-label">Цветовая палитра</div>
+        <div class="color-picker" id="colorPicker"></div>
+        <div class="field-label">Вещи в списке</div>
+        <div id="itemsEditor"></div>
+        <div class="add-item-row">
+            <input type="text" class="input-field" id="newItemInput" placeholder="Добавить вещь..." maxlength="60">
+            <button type="button" class="add-item-btn" id="addItemBtn">+</button>
+        </div>
+        <button type="button" class="btn-secondary" id="listAdvancedBtn">+ Вещь со всеми полями</button>
+        <button type="button" class="btn-primary" id="saveListBtn" style="margin-top:14px">Сохранить</button>
+        <button type="button" class="btn-danger" id="deleteListBtn" style="display:none">Удалить список</button>
+    </div>
+</div>
 
-        // Уведомления onboarding
-        bind('notifAllowBtn', 'click', handleNotifAllow);
-        bind('notifLaterBtn', 'click', handleNotifLater);
+<div class="modal-overlay" id="advancedItemModal2">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="advancedItemModal2">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Подробно о вещи</h2>
+        <div class="field-label">Название</div>
+        <input type="text" class="input-field" id="adv2Name" placeholder="Например: Зубная щётка" maxlength="60">
+        <div class="field-label">Категория</div>
+        <select class="input-field" id="adv2Cat"></select>
+        <div class="field-label">Количество</div>
+        <input type="number" class="input-field" id="adv2Qty" value="1" min="1" max="99">
+        <div class="field-label">Заметка</div>
+        <input type="text" class="input-field" id="adv2Note" placeholder="Например: та, что с Type-C" maxlength="60">
+        <button type="button" class="btn-primary" id="adv2ConfirmBtn">Добавить</button>
+    </div>
+</div>
 
-        // Категории
-        bind('manageCategoriesBtn', 'click', openManageCategories);
-        bind('addNewCatFromList', 'click', function() { openCategoryModal(null, 'manageCategoriesModal'); });
-        bind('saveCatBtn', 'click', saveNewCategory);
+<div class="modal-overlay" id="addItemModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="addItemModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2 id="addItemModalTitle">Новая вещь</h2>
+        <div class="field-label">Название</div>
+        <input type="text" class="input-field" id="addItemName" placeholder="Например: Зубная щётка" maxlength="60">
+        <div class="field-label">Категория</div>
+        <select class="input-field" id="addItemCat"></select>
+        <div class="field-label">Количество</div>
+        <input type="number" class="input-field" id="addItemQty" value="1" min="1" max="99">
+        <div class="field-label">Заметка</div>
+        <input type="text" class="input-field" id="addItemNote" placeholder="Например: та, что с Type-C" maxlength="60">
+        <button type="button" class="btn-primary" id="confirmAddItemBtn">Добавить</button>
+    </div>
+</div>
 
-        // Журнал ошибок
-        bind('viewErrorLogBtn', 'click', function() { openErrorLog(); openModal('errorLogModal'); });
-        bind('downloadLogBtn', 'click', downloadErrorLog);
-        bind('clearLogBtn', 'click', function() {
-            if (confirm('Очистить журнал ошибок?')) { bbClearErrorLog(); openErrorLog(); renderProfile(); }
-        });
+<div class="modal-overlay" id="editProfileModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="editProfileModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Редактировать профиль</h2>
+        <div style="display:flex;justify-content:center;margin-bottom:22px">
+            <div class="profile-avatar" id="editAvatar" style="width:110px;height:110px;font-size:44px">
+                <span id="editAvatarLetter">Э</span>
+                <span class="avatar-edit" style="width:34px;height:34px"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
+            </div>
+        </div>
+        <input type="file" id="avatarInput" accept="image/*" style="display:none">
+        <div class="field-label">Имя</div>
+        <input type="text" class="input-field" id="editName" placeholder="Ваше имя" maxlength="30">
+        <button type="button" class="btn-primary" id="saveProfileBtn">Сохранить</button>
+        <button type="button" class="btn-secondary" id="resetAvatarBtn">Удалить фото</button>
+    </div>
+</div>
 
-        // Категории в модалках — change обрабатывается глобально
-        ['advCat','adv2Cat'].forEach(function(selId) {
-            var sel = $(selId);
-            if (sel) sel.addEventListener('change', function() {
-                var fallback = sel.value === '__new__' ? 'other' : sel.value;
-                var parent = selId === 'advCat' ? 'advancedItemModal' : 'advancedItemModal2';
-                handleCategoryChange(sel, fallback, parent);
-            });
-        });
-        var addCat = $('addItemCat');
-        if (addCat) addCat.addEventListener('change', function() {
-            var fallback = addCat.value === '__new__' ? 'other' : addCat.value;
-            handleCategoryChange(addCat, fallback, 'addItemModal');
-        });
+<div class="modal-overlay" id="categoryModal">
+    <div class="modal">
+        <button type="button" class="modal-close" id="categoryCloseBtn">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Новая категория</h2>
+        <div class="field-label">Название</div>
+        <input type="text" class="input-field" id="newCatName" placeholder="Например: Спорт" maxlength="20">
+        <div class="field-label">Иконка</div>
+        <div class="emoji-picker" id="catEmojiPicker"></div>
+        <button type="button" class="btn-primary" id="saveCatBtn">Сохранить категорию</button>
+    </div>
+</div>
 
-        // Свайп в tipViewer (советы)
-        var tv = $('tipViewer');
-        if (tv) {
-            var tStartX = 0, tStartY = 0, tDown = false;
-            tv.addEventListener('touchstart', function(e) { tStartX = e.touches[0].clientX; tStartY = e.touches[0].clientY; tDown = true; }, { passive: true });
-            tv.addEventListener('touchend', function(e) {
-                if (!tDown) return;
-                tDown = false;
-                var dx = e.changedTouches[0].clientX - tStartX;
-                var dy = e.changedTouches[0].clientY - tStartY;
-                if (Math.abs(dy) > 100 && Math.abs(dy) > Math.abs(dx)) { closeTipViewer(); return; }
-                if (tipsMode !== 'cat') return;
-                if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
-                    if (dx < 0 && currentTipIdx < TIPS_CATEGORIES.length - 1) openTipViewer(currentTipIdx + 1);
-                    else if (dx > 0 && currentTipIdx > 0) openTipViewer(currentTipIdx - 1);
-                }
-            }, { passive: true });
-        }
+<div class="modal-overlay" id="manageCategoriesModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="manageCategoriesModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Мои категории</h2>
+        <div id="catListContainer"></div>
+        <button type="button" class="btn-primary" id="addNewCatFromList" style="margin-top:14px">+ Создать категорию</button>
+    </div>
+</div>
 
-        // Первичный рендер
-        renderHome();
-        renderProfile();
-        renderListsPage();
+<div class="modal-overlay" id="errorLogModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="errorLogModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Журнал ошибок</h2>
+        <div id="errorLogContainer"></div>
+        <button type="button" class="btn-secondary" id="downloadLogBtn" style="margin-top:14px">💾 Скачать JSON</button>
+        <button type="button" class="btn-danger" id="clearLogBtn">🗑 Очистить журнал</button>
+    </div>
+</div>
 
-        // Онбординг и уведомления
-        if (!localStorage.getItem('bybag_onboarding_done')) setTimeout(showOnboarding, 800);
-        else if (!localStorage.getItem('bybag_notif_asked')) setTimeout(showNotifOnboarding, 1200);
+<div class="modal-overlay" id="addListToTripModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="addListToTripModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Добавить список в поездку</h2>
+        <div class="field-label">Выберите один или несколько списков</div>
+        <div class="list-picker" id="addListToTripPicker"></div>
+        <button type="button" class="btn-primary" id="addListToTripConfirmBtn" style="margin-top:14px">Добавить в поездку</button>
+    </div>
+</div>
 
-        // Напоминания
-        setTimeout(checkReminders, 3000);
-        setInterval(checkReminders, 3600000);
-    } catch (e) {
-        bbLogError(1001, 'Ошибка инициализации приложения', { stack: e.stack });
-        showErrorScreen(1001, 'Ошибка инициализации приложения', e);
-    }
-}
+<div class="modal-overlay" id="notifOnboardModal">
+    <div class="modal">
+        <div style="padding:8px 4px">
+            <div style="font-size:72px;text-align:center;margin-bottom:16px;animation:float 3s ease-in-out infinite">🔔</div>
+            <h2 style="font-size:22px;font-weight:800;color:var(--text);text-align:center;margin-bottom:10px;padding:0">Включить напоминания?</h2>
+            <p style="font-size:15px;color:var(--text-2);text-align:center;line-height:1.55;font-weight:500;margin-bottom:20px;padding:0 12px">Чтобы вовремя собрать багаж и ничего не забыть, разрешите уведомления.</p>
+            <ul style="list-style:none;margin-bottom:24px;padding:0 12px">
+                <li style="font-size:14px;color:var(--text);font-weight:600;padding:8px 0;display:flex;align-items:center;gap:10px"><span style="font-size:18px;width:28px;text-align:center">📅</span> Напоминание за день до поездки</li>
+                <li style="font-size:14px;color:var(--text);font-weight:600;padding:8px 0;display:flex;align-items:center;gap:10px"><span style="font-size:18px;width:28px;text-align:center">🧳</span> Напоминание в день отправления</li>
+                <li style="font-size:14px;color:var(--text);font-weight:600;padding:8px 0;display:flex;align-items:center;gap:10px"><span style="font-size:18px;width:28px;text-align:center">✈️</span> Никакого спама — только по делу</li>
+            </ul>
+            <button type="button" class="btn-primary" id="notifAllowBtn">Разрешить уведомления</button>
+            <button type="button" class="btn-secondary" id="notifLaterBtn">Позже</button>
+        </div>
+    </div>
+</div>
 
-// ============ ЗАПУСК ============
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-else init();
+<div class="onboarding-viewer" id="onboardingViewer">
+    <div class="onb-slide" id="onbSlide">
+        <div class="onb-bg-emoji" id="onbBgEmoji">🧳</div>
+        <div class="onb-content" id="onbContent"></div>
+    </div>
+    <div class="onb-bottom">
+        <div class="onb-dots" id="onbDots"></div>
+        <div class="onb-buttons">
+            <button type="button" class="onb-skip" id="onbSkipBtn">Пропустить</button>
+            <button type="button" class="onb-next" id="onbNextBtn">Далее →</button>
+        </div>
+    </div>
+</div>
+
+<div class="tip-viewer" id="tipViewer">
+    <div class="tip-viewer-bg" id="tipViewerBg"></div>
+    <div class="tip-viewer-deco" id="tipViewerDeco">💡</div>
+    <div class="tip-viewer-header">
+        <div class="tip-viewer-avatar" id="tipViewerAvatar">💡</div>
+        <div class="tip-viewer-info">
+            <div class="t-title" id="tipViewerTitle">Советы</div>
+            <div class="t-sub" id="tipViewerSub">полезное для поездки</div>
+        </div>
+        <button type="button" class="tip-viewer-close" id="tipViewerClose">✕</button>
+    </div>
+    <div class="tip-viewer-content" id="tipViewerContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/errors.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/app.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
