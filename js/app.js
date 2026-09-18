@@ -1893,7 +1893,96 @@ function renderCatList() {
         cont.appendChild(item);
     });
 }
+// ============ ЭКСПОРТ / ИМПОРТ ============
+function exportData() {
+    try {
+        var data = {
+            version: BB_VERSION,
+            exportDate: new Date().toISOString(),
+            activeTrips: activeTrips,
+            tripHistory: tripHistory,
+            customTypes: customTypes,
+            customTripTypes: customTripTypes,
+            customCategories: customCategories,
+            profile: profile,
+            settings: settings,
+            achievementsState: achievementsState
+        };
+        var json = JSON.stringify(data, null, 2);
+        var blob = new Blob([json], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'mybag-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+        vibrate();
+        showToast('Файл сохранён');
+    } catch (e) {
+        bbLogError(9021, 'Ошибка экспорта: ' + e.message, { stack: e.stack });
+        showToast('Ошибка экспорта');
+    }
+}
 
+function openImportPicker() {
+    var fileInput = $('importDataFile');
+    if (fileInput) {
+        fileInput.value = '';
+        fileInput.click();
+    }
+}
+
+function importData(file) {
+    if (!file) return;
+    try {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                var data = JSON.parse(e.target.result);
+                if (!data || typeof data !== 'object' || !data.version) {
+                    showToast('Неверный формат файла');
+                    return;
+                }
+                var stats = [];
+                if (data.activeTrips && Array.isArray(data.activeTrips)) stats.push(data.activeTrips.length + ' поездок');
+                if (data.customTypes && typeof data.customTypes === 'object') stats.push(Object.keys(data.customTypes).length + ' списков');
+                if (data.tripHistory && Array.isArray(data.tripHistory)) stats.push(data.tripHistory.length + ' в истории');
+                var preview = stats.length ? 'В файле: ' + stats.join(', ') + '.\n\n' : '';
+                var msg = preview + 'Заменить все текущие данные? Это действие нельзя отменить.';
+                if (!confirm(msg)) return;
+
+                try { localStorage.clear(); } catch (er) {}
+
+                saveJSON('bybag_active_trips', data.activeTrips || []);
+                saveJSON('bybag_history', data.tripHistory || []);
+                saveJSON('bybag_custom_types', data.customTypes || {});
+                saveJSON('bybag_custom_trip_types', data.customTripTypes || {});
+                saveJSON('bybag_custom_categories', data.customCategories || {});
+                saveJSON('bybag_profile', data.profile || { name: 'Эрик', avatar: null });
+                saveJSON('bybag_settings', data.settings || { dark: false, notif: true, vibrate: true, hideDone: false });
+                saveJSON('bybag_achievements', data.achievementsState || {});
+
+                vibrate();
+                showToast('Данные восстановлены');
+                setTimeout(function() { location.reload(); }, 700);
+            } catch (err) {
+                bbLogError(9022, 'Ошибка парсинга импорта: ' + err.message, { stack: err.stack });
+                showToast('Ошибка чтения файла');
+            }
+        };
+        reader.onerror = function() {
+            showToast('Ошибка чтения файла');
+        };
+        reader.readAsText(file);
+    } catch (e) {
+        bbLogError(9023, 'Ошибка импорта: ' + e.message, { stack: e.stack });
+        showToast('Ошибка импорта');
+    }
+}
+
+// ============ ЖУРНАЛ ОШИБОК ============
 // ============ ЖУРНАЛ ОШИБОК ============
 function openErrorLog() {
     var cont = $('errorLogContainer'); if (!cont) return;
