@@ -1716,6 +1716,19 @@ function renderProfile() {
             if (profile.avatar) { av.style.backgroundImage = 'url(' + profile.avatar + ')'; av.classList.add('has-photo'); lt.textContent = ''; }
             else { av.style.backgroundImage = ''; av.classList.remove('has-photo'); lt.textContent = (profile.name || 'Э').charAt(0).toUpperCase(); }
         }
+        // Аватар в нижнем меню — синхронизация
+        var navAv = $('navAvatar'), navLt = $('navAvatarLetter');
+        if (navAv && navLt) {
+            if (profile.avatar) {
+                navAv.style.backgroundImage = 'url(' + profile.avatar + ')';
+                navAv.classList.add('has-photo');
+                navLt.textContent = '';
+            } else {
+                navAv.style.backgroundImage = '';
+                navAv.classList.remove('has-photo');
+                navLt.textContent = (profile.name || 'Э').charAt(0).toUpperCase();
+            }
+        }
         renderAchievements(s);
     } catch (e) { bbLogError(3003, 'Ошибка рендера профиля', { stack: e.stack }); }
 }
