@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Инициализация, обработчики кнопок, запуск приложения
 // Файл: js/main.js
-// Версия: 2.5.3
+// Версия: 2.6.0
 // ============================================================
 
 function bind(id, ev, fn) { var el = $(id); if (el) { try { el.addEventListener(ev, fn); } catch (e) {} } }
@@ -126,6 +126,28 @@ function init() {
         bind('editAvatar', 'click', function() { var a = $('avatarInput'); if (a) a.click(); });
         bind('resetAvatarBtn', 'click', resetAvatar);
 
+        // Экспорт / импорт данных
+        bind('exportDataBtn', 'click', function() {
+            try {
+                if (typeof exportData === 'function') exportData();
+                else showToast('Ошибка: exportData не найдена');
+            } catch (e) { showToast('Ошибка: ' + e.message); }
+        });
+        bind('importDataBtn', 'click', function() {
+            try {
+                if (typeof openImportPicker === 'function') openImportPicker();
+                else showToast('Ошибка: openImportPicker не найдена');
+            } catch (e) { showToast('Ошибка: ' + e.message); }
+        });
+        bind('importDataFile', 'change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                try {
+                    if (typeof importData === 'function') importData(e.target.files[0]);
+                    else showToast('Ошибка: importData не найдена');
+                } catch (err) { showToast('Ошибка: ' + err.message); }
+            }
+        });
+
         // Настройки
         bind('darkModeToggleItem', 'click', function() { settings.dark = !settings.dark; saveSettings(); applyTheme(); });
         bind('notifToggleItem', 'click', function() {
@@ -176,10 +198,7 @@ function init() {
             handleCategoryChange(addCat, fallback, 'addItemModal');
         });
 
-        // Свайп в tipViewer:
-        // - горизонтальный → переключение категорий
-        // - быстрый вертикальный вниз (>80px, <300ms, строго вертикально) → закрыть
-        // - медленный вертикальный (скролл текста) → игнорируем
+        // Свайп в tipViewer — только горизонтальный + быстрый вертикальный вниз для закрытия
         var tv = $('tipViewer');
         if (tv) {
             var tStartX = 0, tStartY = 0, tStartT = 0, tDown = false, tMoved = false, tMovedAt = 0;
@@ -204,18 +223,13 @@ function init() {
                 if (!tDown) return;
                 tDown = false;
                 if (!tMoved) return;
-
                 var dx = e.changedTouches[0].clientX - tStartX;
                 var dy = e.changedTouches[0].clientY - tStartY;
                 var dt = Date.now() - tStartT;
-
-                // === Быстрый вертикальный свайп вниз → ЗАКРЫТЬ ===
                 if (dy > 80 && Math.abs(dy) > Math.abs(dx) * 2 && dt < 300) {
                     closeTipViewer();
                     return;
                 }
-
-                // === Горизонтальный свайп → переключение категорий ===
                 if (tipsMode !== 'cat') return;
                 if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
                     if (dx < 0 && currentTipIdx < TIPS_CATEGORIES.length - 1) openTipViewer(currentTipIdx + 1);
