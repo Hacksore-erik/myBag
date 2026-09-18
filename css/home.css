@@ -235,3 +235,11 @@ body.dark .search-highlight{background:rgba(255,210,90,.4);color:#fff}
 .fab-menu-label{font-size:15px;font-weight:700;line-height:1}
 body.dark .fab-menu-item{background:var(--card);border-color:var(--border-soft)}
 body.dark .fab-menu-item:active{background:var(--card-solid)}
+
+/* ============================================================
+   АВАТАР В НИЖНЕМ МЕНЮ (v2.5.5)
+   ============================================================ */
+.nav-avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;background-size:cover;background-position:center;overflow:hidden;flex-shrink:0}
+.nav-avatar.has-photo{color:transparent}
+.nav-avatar #navAvatarLetter{line-height:1;display:block}
+.nav-avatar.has-photo #navAvatarLetter{display:none}
