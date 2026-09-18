@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="myBag">
 <meta name="mobile-web-app-capable" content="yes">
-<title>myBag v2.5.2</title>
+<title>myBag v2.6.0</title>
 
 <link rel="apple-touch-icon" href="Logo.png">
 <link rel="apple-touch-icon" sizes="180x180" href="Logo.png">
@@ -62,11 +62,11 @@
     <div class="container">
         <div class="profile-hero">
             <div class="profile-avatar" id="profileAvatar">
-                <span id="profileAvatarLetter">Т</span>
+                <span id="profileAvatarLetter">Э</span>
                 <span class="avatar-edit"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
             </div>
             <div class="profile-info">
-                <h2 id="profileName">Твое имя</h2>
+                <h2 id="profileName">Эрик</h2>
                 <div class="profile-badge">⭐ Premium</div>
             </div>
         </div>
@@ -89,17 +89,34 @@
         </div>
         <div class="stats-title">О приложении</div>
         <div class="profile-menu">
-            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.5.2</div></div>
+            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.6.0</div></div>
             <div class="profile-item" id="viewErrorLogBtn"><div class="pi-icon">🐛</div><div class="pi-label">Журнал ошибок</div><div class="pi-value" id="errorCountLabel">0</div><div class="pi-arrow">›</div></div>
         </div>
-        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.5.2</div>
+
+        <div class="stats-title">Данные</div>
+        <div class="profile-menu">
+            <div class="profile-item" id="exportDataBtn">
+                <div class="pi-icon">📤</div>
+                <div class="pi-label">Экспорт данных</div>
+                <div class="pi-arrow">›</div>
+            </div>
+            <div class="profile-item" id="importDataBtn">
+                <div class="pi-icon">📥</div>
+                <div class="pi-label">Импорт данных</div>
+                <div class="pi-arrow">›</div>
+            </div>
+        </div>
+
+        <input type="file" id="importDataFile" accept="application/json,.json" style="display:none">
+
+        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.6.0</div>
     </div>
 </div>
 
 <div class="bottom-nav">
     <button type="button" class="nav-item active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-label">Главная</span></button>
     <button type="button" class="nav-item" data-page="lists"><span class="nav-icon">📋</span><span class="nav-label">Списки</span></button>
-    <button type="button" class="nav-item" data-page="profile"><span class="nav-icon nav-avatar" id="navAvatar"><span id="navAvatarLetter">Т</span></span><span class="nav-label">Профиль</span></button>
+    <button type="button" class="nav-item" data-page="profile"><span class="nav-icon nav-avatar" id="navAvatar"><span id="navAvatarLetter">Э</span></span><span class="nav-label">Профиль</span></button>
 </div>
 
 <div class="checklist-page" id="checklistPage">
@@ -168,7 +185,7 @@
             <span class="dates-sep">—</span>
             <input type="date" class="input-field" id="tripEndDate" aria-label="Дата окончания">
         </div>
-        <div class="field-label">Город (необязательно)</div>
+        <div class="field-label">Город (для погоды, необязательно)</div>
         <input type="text" class="input-field" id="tripCity" placeholder="Например: Москва">
         <button type="button" class="btn-primary" id="createBtn" disabled>Создать поездку</button>
     </div>
@@ -343,7 +360,7 @@
         <h2>Редактировать профиль</h2>
         <div style="display:flex;justify-content:center;margin-bottom:22px">
             <div class="profile-avatar" id="editAvatar" style="width:110px;height:110px;font-size:44px">
-                <span id="editAvatarLetter">Т</span>
+                <span id="editAvatarLetter">Э</span>
                 <span class="avatar-edit" style="width:34px;height:34px"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
             </div>
         </div>
@@ -446,6 +463,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
 <script src="js/errors.js"></script>
 <script src="js/constants.js"></script>
 <script src="js/utils.js"></script>
