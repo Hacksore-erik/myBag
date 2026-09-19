@@ -2546,3 +2546,42 @@ function handleNotifLater() {
     closeModal('notifOnboardModal');
     try { localStorage.setItem('bybag_notif_asked', '1'); } catch (e) {}
 }
+
+// ============ СТРАНИЦА НАСТРОЕК (задача #8) ============
+function openSettingsPage() {
+    try {
+        var sp = $('settingsPage');
+        if (!sp) {
+            showToast('Ошибка: settingsPage не найдена в HTML');
+            bbLogError(9029, 'settingsPage отсутствует в HTML');
+            return;
+        }
+        // Обновляем значения тоглов и счётчика ошибок перед показом
+        var e = $('errorCountLabel'); if (e) e.textContent = bbGetErrorLog().length;
+        applyTheme(); // обновит .on на тоглах
+        sp.classList.add('active');
+        resetUIBlocks();
+        // Прячем нижнюю навигацию (чтобы не мешала — как в чек-листе)
+        var bn = document.querySelector('.bottom-nav');
+        if (bn) bn.style.display = 'none';
+        vibrate();
+    } catch (err) {
+        bbLogError(9029, 'Ошибка открытия настроек: ' + err.message, { stack: err.stack });
+        showToast('Ошибка открытия настроек: ' + err.message);
+    }
+}
+
+function closeSettingsPage() {
+    try {
+        var sp = $('settingsPage');
+        if (sp) sp.classList.remove('active');
+        resetUIBlocks();
+        // Возвращаем нижнюю навигацию
+        var bn = document.querySelector('.bottom-nav');
+        if (bn) bn.style.display = '';
+        // Обновляем профиль — на случай, если меняли имя/аватар
+        renderProfile();
+    } catch (e) {
+        bbLogError(9029, 'Ошибка закрытия настроек: ' + e.message, { stack: e.stack });
+    }
+}
