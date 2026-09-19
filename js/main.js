@@ -8,6 +8,21 @@ function bind(id, ev, fn) { var el = $(id); if (el) { try { el.addEventListener(
 
 function init() {
     try {
+        // ===== ПРОВЕРКА ЭКРАНА-ЗАГЛУШКИ =====
+        if (typeof BLOCKED_CONFIG !== 'undefined' && BLOCKED_CONFIG && BLOCKED_CONFIG.enabled) {
+            var bs = document.getElementById('blockedScreen');
+            if (bs) {
+                var t = document.getElementById('blockedTitle');
+                var s = document.getElementById('blockedSubtitle');
+                var f = document.getElementById('blockedFooter');
+                if (t) t.textContent = BLOCKED_CONFIG.title || '';
+                if (s) s.textContent = BLOCKED_CONFIG.subtitle || '';
+                if (f) f.textContent = BLOCKED_CONFIG.footer || '';
+                bs.classList.add('show');
+            }
+            return; // ⛔ дальше не идём — приложение не запускается
+        }
+
         loadData();
         applyTheme();
 
