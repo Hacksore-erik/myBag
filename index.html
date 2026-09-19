@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="myBag">
 <meta name="mobile-web-app-capable" content="yes">
-<title>myBag v2.6.0</title>
+<title>myBag v2.7.0</title>
 
 <link rel="apple-touch-icon" href="Logo.png">
 <link rel="apple-touch-icon" sizes="180x180" href="Logo.png">
@@ -50,6 +50,12 @@
     </div>
 </div>
 
+<div class="page" id="page-trip">
+    <div class="container">
+        <div id="tripPageContent"></div>
+    </div>
+</div>
+
 <div class="page" id="page-lists">
     <div class="container">
         <div style="height:14px"></div>
@@ -87,7 +93,7 @@
             <div class="profile-item" id="vibrateToggleItem"><div class="pi-icon">📳</div><div class="pi-label">Вибрация</div><div class="toggle" id="vibrateToggle"></div></div>
             <div class="profile-item" id="showOnboardingBtn"><div class="pi-icon">📖</div><div class="pi-label">О приложении</div><div class="pi-arrow">›</div></div>
         </div>
-       <div class="stats-title">Данные</div>
+        <div class="stats-title">Данные</div>
         <div class="profile-menu">
             <div class="profile-item" id="exportDataBtn">
                 <div class="pi-icon">📤</div>
@@ -100,20 +106,20 @@
                 <div class="pi-arrow">›</div>
             </div>
         </div>
-
         <div class="stats-title">О приложении</div>
         <div class="profile-menu">
-            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.6.0</div></div>
+            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.7.0</div></div>
             <div class="profile-item" id="viewErrorLogBtn"><div class="pi-icon">🐛</div><div class="pi-label">Журнал ошибок</div><div class="pi-value" id="errorCountLabel">0</div><div class="pi-arrow">›</div></div>
         </div>
         <input type="file" id="importDataFile" accept="application/json,.json" style="display:none">
 
-        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.6.0</div>
+        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.7.0</div>
     </div>
 </div>
 
 <div class="bottom-nav">
     <button type="button" class="nav-item active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-label">Главная</span></button>
+    <button type="button" class="nav-item" data-page="trip"><span class="nav-icon">✈️</span><span class="nav-label">Поездка</span></button>
     <button type="button" class="nav-item" data-page="lists"><span class="nav-icon">📋</span><span class="nav-label">Списки</span></button>
     <button type="button" class="nav-item" data-page="profile"><span class="nav-icon nav-avatar" id="navAvatar"><span id="navAvatarLetter">Э</span></span><span class="nav-label">Профиль</span></button>
 </div>
@@ -133,17 +139,17 @@
             <div class="progress-bar"><div class="progress-fill" id="tripProgressFill" style="width:0%"></div></div>
         </div>
         <div class="weather-card" id="weatherCard">
-    <div class="weather-head" id="weatherHead">
-        <div class="weather-icon" id="weatherIcon">☀️</div>
-        <div class="weather-temp" id="weatherTemp">--</div>
-        <div class="weather-info">
-            <div class="weather-city" id="weatherCity">--</div>
-            <div class="weather-desc" id="weatherDesc">Загрузка...</div>
+            <div class="weather-head" id="weatherHead">
+                <div class="weather-icon" id="weatherIcon">☀️</div>
+                <div class="weather-temp" id="weatherTemp">--</div>
+                <div class="weather-info">
+                    <div class="weather-city" id="weatherCity">--</div>
+                    <div class="weather-desc" id="weatherDesc">Загрузка...</div>
+                </div>
+                <div class="weather-arrow">›</div>
+            </div>
+            <div class="weather-forecast" id="weatherForecast"></div>
         </div>
-        <div class="weather-arrow">›</div>
-    </div>
-    <div class="weather-forecast" id="weatherForecast"></div>
-</div>
         <div class="checklist-toolbar">
             <input type="text" class="input-field" id="searchInput" placeholder="🔍 Поиск по вещам...">
             <button type="button" class="toolbar-btn" id="collapseAllBtn" style="display:none" title="Свернуть все">⌃</button>
@@ -338,7 +344,7 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="addItemModal">
+<div class="modal-overlay above-checklist" id="addItemModal">
     <div class="modal">
         <button type="button" class="modal-close" data-close="addItemModal">✕</button>
         <div class="modal-handle"></div>
@@ -416,6 +422,39 @@
         <div class="field-label">Выберите один или несколько списков</div>
         <div class="list-picker" id="addListToTripPicker"></div>
         <button type="button" class="btn-primary" id="addListToTripConfirmBtn" style="margin-top:14px">Добавить в поездку</button>
+    </div>
+</div>
+
+<div class="modal-overlay above-checklist" id="tripInfoModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="tripInfoModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2>Информация о поездке</h2>
+        <div class="field-label">Отель</div>
+        <input type="text" class="input-field" id="infoHotelName" placeholder="Название отеля" maxlength="60">
+        <input type="text" class="input-field" id="infoHotelAddress" placeholder="Адрес" maxlength="120">
+        <input type="text" class="input-field" id="infoHotelBooking" placeholder="Номер брони" maxlength="40">
+        <input type="tel" class="input-field" id="infoHotelPhone" placeholder="Телефон отеля" maxlength="30">
+        <div class="field-label">Рейс</div>
+        <input type="text" class="input-field" id="infoFlightNumber" placeholder="Номер рейса (например SU-1234)" maxlength="20">
+        <input type="text" class="input-field" id="infoFlightFrom" placeholder="Откуда" maxlength="40">
+        <input type="text" class="input-field" id="infoFlightTo" placeholder="Куда" maxlength="40">
+        <input type="text" class="input-field" id="infoFlightTime" placeholder="Время вылета (например 09:00)" maxlength="10">
+        <button type="button" class="btn-primary" id="saveTripInfoBtn">Сохранить</button>
+    </div>
+</div>
+
+<div class="modal-overlay above-checklist" id="noteModal">
+    <div class="modal">
+        <button type="button" class="modal-close" data-close="noteModal">✕</button>
+        <div class="modal-handle"></div>
+        <h2 id="noteModalTitle">Новая заметка</h2>
+        <div class="field-label">Иконка <span class="hint">(необязательно)</span></div>
+        <div class="emoji-picker" id="noteEmojiPicker"></div>
+        <div class="field-label">Текст</div>
+        <input type="text" class="input-field" id="noteText" placeholder="Например: Wi-Fi: osteria/12345" maxlength="100">
+        <button type="button" class="btn-primary" id="noteSaveBtn">Добавить</button>
+        <button type="button" class="btn-danger" id="noteDeleteBtn" style="display:none;margin-top:10px">🗑 Удалить</button>
     </div>
 </div>
 
