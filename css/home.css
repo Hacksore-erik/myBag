@@ -99,7 +99,9 @@ body.dark .tip-ring{background:conic-gradient(from 180deg,#6b8cff,#a06bff,#ff6bc
 .add-trip-title{font-size:16px;font-weight:800;color:var(--text)}
 .add-trip-desc{font-size:12px;color:var(--text-3);font-weight:600;padding:0 24px;text-align:center}
 
-/* КОМПАКТНЫЙ ВИДЖЕТ НА ВКЛАДКЕ «ПОЕЗДКА» */
+/* ============================================================
+   КОМПАКТНЫЙ ВИДЖЕТ НА ВКЛАДКЕ «ПОЕЗДКА»
+   ============================================================ */
 .trip-compact-widget{background:var(--card);border:1.5px solid var(--border-soft);border-radius:16px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:transform .15s ease,background .15s ease;-webkit-tap-highlight-color:transparent}
 .trip-compact-widget:active{transform:scale(.99);background:var(--card-solid)}
 .trip-compact-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
@@ -107,16 +109,28 @@ body.dark .tip-ring{background:conic-gradient(from 180deg,#6b8cff,#a06bff,#ff6bc
 .trip-compact-info{flex:1;min-width:0}
 .trip-compact-name{font-size:16px;font-weight:800;color:var(--text);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.3px;margin-bottom:2px}
 .trip-compact-meta{font-size:11.5px;font-weight:600;color:var(--text-3);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trip-compact-countdown{font-size:11.5px;font-weight:700;color:var(--accent-2);background:rgba(255,154,90,.12);border-radius:100px;padding:4px 10px;flex-shrink:0;white-space:nowrap;align-self:flex-start}
+body.dark .trip-compact-countdown{background:rgba(107,140,255,.18);color:#a9bdff}
 .trip-compact-progress{display:flex;align-items:center;gap:10px}
 .trip-compact-bar{flex:1;height:7px;background:var(--border-soft);border-radius:10px;overflow:hidden}
 .trip-compact-fill{height:100%;border-radius:10px;transition:width .5s cubic-bezier(.4,0,.2,1)}
 .trip-compact-count{font-size:12.5px;font-weight:800;color:var(--text);flex-shrink:0;min-width:48px;text-align:right;letter-spacing:-.2px}
 .trip-compact-percent{font-size:11px;font-weight:700;color:var(--text-3);flex-shrink:0;min-width:34px;text-align:right}
 
-/* КАРУСЕЛЬ НА ВКЛАДКЕ «ПОЕЗДКА» */
-.trip-page-carousel{position:relative;overflow:hidden;margin-bottom:4px}
+/* ============================================================
+   КАРУСЕЛЬ НА ВКЛАДКЕ «ПОЕЗДКА» (Вариант 4: стрелки + точки + свайп)
+   ============================================================ */
+.trip-page-carousel-wrap{position:relative;margin-bottom:4px}
+.trip-page-carousel-row{display:flex;align-items:center;gap:6px}
+.trip-page-carousel{position:relative;overflow:hidden;flex:1;min-width:0}
 .trip-page-track{display:flex;transition:transform .35s cubic-bezier(.4,0,.2,1)}
-.trip-page-track .trip-compact-widget{flex:0 0 100%;min-width:100%;margin:0 0 8px 0}
+.trip-page-track .trip-compact-widget{flex:0 0 100%;min-width:100%;margin:0}
+.tc-arrow{width:28px;height:28px;border-radius:50%;background:var(--card);border:1.5px solid var(--border-soft);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;padding:0 0 3px 0;-webkit-tap-highlight-color:transparent;transition:opacity .2s ease,background .15s ease;line-height:1}
+.tc-arrow:active:not(:disabled){background:var(--card-solid);transform:scale(.94)}
+.tc-arrow:disabled{opacity:.3;cursor:default}
+.trip-page-dots{display:flex;justify-content:center;gap:6px;padding:10px 0 0}
+.trip-page-dots .tpdot{width:7px;height:7px;border-radius:50%;background:var(--border-soft);transition:all .25s;cursor:pointer}
+.trip-page-dots .tpdot.active{width:20px;border-radius:100px;background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
 
 /* EMPTY */
 .empty-hero{padding:36px 24px;margin:6px 0 16px;background:var(--card);border:1.5px dashed rgba(255,154,90,.4);border-radius:25px;text-align:center;cursor:pointer;animation:slideIn .5s ease}
@@ -163,12 +177,6 @@ body.dark .history-item .h-badge{background:rgba(61,220,132,.15)}
 .list-header-remove:active{background:rgba(214,51,108,.15);color:#d6336c}
 body.dark .list-header-remove:active{background:rgba(255,107,139,.2);color:#ff6b8b}
 
-/* Секции по категориям — на всякий случай */
-.cat-section{margin-bottom:18px}
-.cat-header{display:flex;align-items:center;gap:8px;padding:8px 4px;margin-bottom:8px;font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-3);font-weight:700}
-.cat-header .cat-icon{font-size:16px}
-.cat-header .cat-count{font-size:11px;opacity:.6;margin-left:auto;font-weight:600}
-
 /* Тулбар */
 .checklist-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .checklist-toolbar .input-field{flex:1;margin-bottom:0;padding:12px 14px;font-size:14.5px}
@@ -210,30 +218,30 @@ body.dark .search-highlight{background:rgba(255,210,90,.4);color:#fff}
 .progress-fill{height:100%;border-radius:10px;transition:width .5s cubic-bezier(.4,0,.2,1);background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
 .progress-fill.complete{background:linear-gradient(90deg,#4ecb71,#38b2ac)}
 
-/* WEATHER — компактная строка с раскрытием */
-.weather-card{margin-bottom:12px;padding:0;background:var(--card);border:1.5px solid var(--border-soft);border-radius:16px;display:none;overflow:hidden;transition:border-color .2s ease}
+/* ============================================================
+   WEATHER — уменьшено на ~15% (задача #3.1)
+   Размеры/отступы −15%, шрифты −10%
+   ============================================================ */
+.weather-card{margin-bottom:12px;padding:0;background:var(--card);border:1.5px solid var(--border-soft);border-radius:14px;display:none;overflow:hidden;transition:border-color .2s ease}
 .weather-card.show{display:block}
 .weather-card:active{border-color:var(--border)}
-.weather-head{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;transition:background .15s ease;-webkit-tap-highlight-color:transparent}
+.weather-head{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;transition:background .15s ease;-webkit-tap-highlight-color:transparent}
 .weather-head:active{background:var(--card-solid)}
-.weather-icon{font-size:32px;line-height:1;flex-shrink:0;width:40px;text-align:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,.1))}
-.weather-temp{font-size:24px;font-weight:800;color:var(--text);line-height:1;flex-shrink:0;letter-spacing:-.5px;min-width:56px}
+.weather-icon{font-size:27px;line-height:1;flex-shrink:0;width:34px;text-align:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,.1))}
+.weather-temp{font-size:22px;font-weight:800;color:var(--text);line-height:1;flex-shrink:0;letter-spacing:-.5px;min-width:50px}
 .weather-info{flex:1;min-width:0}
-.weather-city{font-size:14px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.weather-desc{font-size:12px;color:var(--text-3);font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.weather-arrow{font-size:16px;color:var(--text-3);flex-shrink:0;transition:transform .25s cubic-bezier(.4,0,.2,1);line-height:1}
+.weather-city{font-size:13px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.weather-desc{font-size:11px;color:var(--text-3);font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.weather-arrow{font-size:14px;color:var(--text-3);flex-shrink:0;transition:transform .25s cubic-bezier(.4,0,.2,1);line-height:1}
 .weather-card.expanded .weather-arrow{transform:rotate(180deg)}
-.weather-forecast{display:none;padding:0 14px 14px;border-top:1px solid var(--border-soft);margin-top:0}
-.weather-card.expanded .weather-forecast{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding-top:12px}
-.forecast-day{text-align:center;padding:8px 4px;background:var(--card-solid);border-radius:10px;border:1px solid var(--border-soft)}
-.forecast-day .fd-name{font-size:9.5px;font-weight:800;color:var(--text-3);text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px}
-.forecast-day .fd-icon{font-size:20px;margin-bottom:6px;line-height:1}
-.forecast-day .fd-temps{font-size:11px;font-weight:800;color:var(--text);line-height:1.3}
+.weather-forecast{display:none;padding:0 12px 12px;border-top:1px solid var(--border-soft);margin-top:0}
+.weather-card.expanded .weather-forecast{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding-top:10px}
+.forecast-day{text-align:center;padding:7px 3px;background:var(--card-solid);border-radius:9px;border:1px solid var(--border-soft)}
+.forecast-day .fd-name{font-size:9px;font-weight:800;color:var(--text-3);text-transform:uppercase;margin-bottom:5px;letter-spacing:.4px}
+.forecast-day .fd-icon{font-size:17px;margin-bottom:5px;line-height:1}
+.forecast-day .fd-temps{font-size:10px;font-weight:800;color:var(--text);line-height:1.3}
 .forecast-day .fd-temps .fd-max{color:var(--text)}
 .forecast-day .fd-temps .fd-min{color:var(--text-3);font-weight:600}
-
-/* Фикс — модалка категории поверх других */
-.modal-overlay.on-top2{z-index:9999!important}
 
 /* ============================================================
    FAB — плавающая кнопка добавления
@@ -282,3 +290,24 @@ body.dark .fab-menu-item:active{background:var(--card-solid)}
 .note-text{flex:1;min-width:0;font-size:14.5px;font-weight:600;color:var(--text);line-height:1.4;word-break:break-word}
 .note-add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:transparent;border:1.5px dashed var(--border-soft);border-radius:14px;color:var(--text-2);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s ease,border-color .15s ease;-webkit-tap-highlight-color:transparent}
 .note-add-btn:active{background:var(--card-solid);border-color:var(--border)}
+
+/* ============================================================
+   ШЕСТЕРЁНКА В ПРОФИЛЕ (задача #8)
+   ============================================================ */
+.profile-settings-btn{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;background:rgba(255,154,90,.12);border:1px solid var(--border-soft);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;padding:0;font-family:inherit;-webkit-tap-highlight-color:transparent;transition:background .15s ease,color .15s ease,transform .15s ease}
+body.dark .profile-settings-btn{background:rgba(107,140,255,.15)}
+.profile-settings-btn:active{transform:scale(.92);background:rgba(255,154,90,.22)}
+body.dark .profile-settings-btn:active{background:rgba(107,140,255,.28)}
+.profile-settings-btn svg{width:18px;height:18px;display:block}
+
+/* ============================================================
+   СТРАНИЦА НАСТРОЕК (задача #8)
+   ============================================================ */
+.settings-page{position:fixed;inset:0;background:var(--bg);z-index:160;display:none;flex-direction:column;overflow:hidden}
+.settings-page.active{display:flex}
+.settings-page-header{display:flex;align-items:center;gap:12px;padding:14px 20px 12px;background:linear-gradient(to bottom,var(--bg) 70%,transparent);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border-soft);flex-shrink:0;position:relative;z-index:10}
+.settings-page-title{flex:1;min-width:0}
+.settings-page-title h2{font-size:18px;font-weight:800;color:var(--text);margin:0;padding:0;text-align:left;letter-spacing:-.3px}
+.settings-page-actions{display:flex;gap:8px;flex-shrink:0;width:40px}
+.settings-page-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 20px 40px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.settings-page-content::-webkit-scrollbar{display:none}
