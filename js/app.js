@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Логика приложения и рендер всех экранов
 // Файл: js/app.js
-// Версия: 2.7.0
+// Версия: 2.8.0
 // ============================================================
 
 // ============ УТИЛИТЫ ============
@@ -9,7 +9,7 @@ var editingItemIdx = null;
 var editingNoteIdx = null;
 
 function attachLongPress(el, onLong, onClick) {
-    var timer = null, startX = 0, startY = 0, moved = false, longFired = false;
+    var timer = null, startX = 0, startY = 0, moved = false, longFired = false, clickHandled = false;
     function clear() { if (timer) { clearTimeout(timer); timer = null; } }
     el.addEventListener('touchstart', function(e) {
         if (e.touches.length !== 1) return;
@@ -17,6 +17,7 @@ function attachLongPress(el, onLong, onClick) {
         startY = e.touches[0].clientY;
         moved = false;
         longFired = false;
+        clickHandled = false;
         clear();
         timer = setTimeout(function() { longFired = true; vibrate(); if (onLong) onLong(); }, 500);
     }, { passive: true });
@@ -29,11 +30,15 @@ function attachLongPress(el, onLong, onClick) {
     el.addEventListener('touchend', function(e) {
         clear();
         if (longFired || moved) return;
+        // ВАЖНО: гасим синтетический click после touchend
+        clickHandled = true;
+        setTimeout(function() { clickHandled = false; }, 400);
         if (onClick) onClick(e);
     }, { passive: true });
     el.addEventListener('touchcancel', function() { clear(); }, { passive: true });
     el.addEventListener('click', function(e) {
         if (longFired) { longFired = false; return; }
+        if (clickHandled) return;
         if (onClick) onClick(e);
     });
 }
@@ -94,7 +99,6 @@ function openAddListToTripModal() {
         selectedListsToAdd = [];
         renderAddListToTripPicker();
         openModal('addListToTripModal');
-        var ov = $('addListToTripModal'); if (ov) ov.classList.add('above-checklist');
     } catch (e) {
         bbLogError(9012, 'Ошибка openAddListToTripModal: ' + e.message, { stack: e.stack });
         showToast('Ошибка: ' + e.message);
@@ -212,7 +216,6 @@ function confirmAddListToTrip() {
                         text: it.text,
                         qty: it.qty,
                         note: it.note,
-                        category: it.category,
                         from: t.name || '',
                         listIds: [listId],
                         done: false
@@ -225,6 +228,7 @@ function confirmAddListToTrip() {
         saveActive();
         closeModal('addListToTripModal');
         renderChecklistPage();
+        renderTripPage();
         vibrate();
         showToast(added + ' ' + plural(added, 'список добавлен', 'списка добавлено', 'списков добавлено'));
     } catch (e) {
@@ -312,7 +316,6 @@ function openNoteModal(idx) {
         if (delBtn) delBtn.style.display = 'none';
     }
 
-    var overlay = $('noteModal'); if (overlay) overlay.classList.add('above-checklist');
     openModal('noteModal');
 }
 
@@ -341,7 +344,9 @@ function saveNote() {
 
         saveActive();
         closeNoteModal();
-        renderChecklistPage();
+        // Обновляем TripPage (там заметки) и чек-лист (на случай если открыт)
+        renderTripPage();
+        if ($('checklistPage') && $('checklistPage').classList.contains('active')) renderChecklistPage();
         vibrate();
     } catch (e) {
         bbLogError(9024, 'Ошибка сохранения заметки: ' + e.message, { stack: e.stack });
@@ -356,7 +361,8 @@ function deleteNote(idx) {
     trip.notes.splice(idx, 1);
     saveActive();
     closeNoteModal();
-    renderChecklistPage();
+    renderTripPage();
+    if ($('checklistPage') && $('checklistPage').classList.contains('active')) renderChecklistPage();
     showToast('Удалено');
 }
 
@@ -367,7 +373,6 @@ function closeNoteModal() {
     var saveBtn = $('noteSaveBtn'); if (saveBtn) saveBtn.textContent = 'Добавить';
     var delBtn = $('noteDeleteBtn'); if (delBtn) delBtn.style.display = 'none';
     closeModal('noteModal');
-    var overlay = $('noteModal'); if (overlay) overlay.classList.remove('above-checklist');
 }
 
 // ============ ИНФОРМАЦИЯ О ПОЕЗДКЕ ============
@@ -388,7 +393,6 @@ function openTripInfoModal() {
     Object.keys(fields).forEach(function(id) {
         var el = $(id); if (el) el.value = fields[id];
     });
-    var overlay = $('tripInfoModal'); if (overlay) overlay.classList.add('above-checklist');
     openModal('tripInfoModal');
 }
 
@@ -409,7 +413,6 @@ function saveTripInfo() {
 
         saveActive();
         closeModal('tripInfoModal');
-        var overlay = $('tripInfoModal'); if (overlay) overlay.classList.remove('above-checklist');
         vibrate();
         showToast('Информация сохранена');
         renderTripPage();
@@ -438,32 +441,14 @@ function renderTripPage() {
             return;
         }
 
-        var stats = getTripStats(trip);
-        var cdText = trip.startDate ? countdown(trip.startDate) : '';
-
-        // ===== 1. Карточка поездки =====
-        var card = document.createElement('div');
-        card.className = 'main-widget';
-        card.style.setProperty('--c1', trip.c1 || '#ffb347');
-        card.style.setProperty('--c2', trip.c2 || '#ff7e5f');
-        card.innerHTML =
-            '<div class="widget-hero"><div class="bg-emoji">' + (trip.emoji || '🎒') + '</div>' +
-                '<div class="hero-top"><div class="hero-label"><span class="dot"></span>Активная поездка</div></div>' +
-                '<div class="hero-title">' +
-                    '<h2>' + escapeHtml(trip.name || 'Поездка') + '</h2>' +
-                    '<div class="hero-date">📅 ' + formatTripDate(trip) + (cdText ? '<span class="hero-countdown">' + cdText + '</span>' : '') + (trip.city ? ' · 📍 ' + escapeHtml(trip.city) : '') + '</div>' +
-                '</div></div>' +
-            '<div class="widget-body"><div class="widget-meta" style="width:100%">' +
-                '<div class="meta-row"><span class="meta-key">Собрано</span><span class="meta-val done">' + stats.done + ' / ' + stats.total + '</span></div>' +
-                '<div class="meta-row"><span class="meta-key">Прогресс</span><span class="meta-val">' + stats.percent + '%</span></div>' +
-            '</div></div>';
-        cont.appendChild(card);
+        // ===== 1. Карусель поездок (Вариант 4) =====
+        cont.appendChild(buildTripPageCarousel());
 
         // ===== 2. Погода =====
         if (trip.city) {
             var weatherTitle = document.createElement('div');
             weatherTitle.className = 'stats-title';
-            weatherTitle.style.marginTop = '20px';
+            weatherTitle.style.marginTop = '16px';
             weatherTitle.textContent = 'Погода';
             cont.appendChild(weatherTitle);
 
@@ -479,7 +464,7 @@ function renderTripPage() {
         var openBtn = document.createElement('button');
         openBtn.type = 'button';
         openBtn.className = 'btn-primary';
-        openBtn.style.marginTop = '20px';
+        openBtn.style.marginTop = '16px';
         openBtn.style.marginBottom = '20px';
         openBtn.innerHTML = '📦 Открыть список вещей';
         openBtn.addEventListener('click', function() {
@@ -540,6 +525,284 @@ function renderTripPage() {
     }
 }
 
+// ============ КАРУСЕЛЬ ПОЕЗДОК НА TRIPPAGE ============
+function buildTripPageCarousel() {
+    var wrap = document.createElement('div');
+    wrap.className = 'trip-page-carousel-wrap';
+
+    var total = activeTrips.length;
+
+    // Одна поездка — просто карточка без стрелок и точек
+    if (total <= 1) {
+        var single = buildTripCompactWidget(activeTrips[0]);
+        wrap.appendChild(single);
+        return wrap;
+    }
+
+    // 2+ поездки — карусель со стрелками и точками
+    var row = document.createElement('div');
+    row.className = 'trip-page-carousel-row';
+
+    // Стрелка назад
+    var prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'tc-arrow tc-prev';
+    prevBtn.innerHTML = '‹';
+    prevBtn.disabled = (currentTripIndex === 0);
+    prevBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        goToTripPage(currentTripIndex - 1);
+    });
+    row.appendChild(prevBtn);
+
+    // Трек с карточками
+    var carousel = document.createElement('div');
+    carousel.className = 'trip-page-carousel';
+    var track = document.createElement('div');
+    track.className = 'trip-page-track';
+    track.id = 'tripPageTrack';
+    activeTrips.forEach(function(trip) { track.appendChild(buildTripCompactWidget(trip)); });
+    carousel.appendChild(track);
+    row.appendChild(carousel);
+
+    // Стрелка вперёд
+    var nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'tc-arrow tc-next';
+    nextBtn.innerHTML = '›';
+    nextBtn.disabled = (currentTripIndex >= total - 1);
+    nextBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        goToTripPage(currentTripIndex + 1);
+    });
+    row.appendChild(nextBtn);
+
+    wrap.appendChild(row);
+
+    // Точки
+    var dots = document.createElement('div');
+    dots.className = 'trip-page-dots';
+    for (var i = 0; i < total; i++) {
+        (function(i) {
+            var d = document.createElement('div');
+            d.className = 'tpdot' + (i === currentTripIndex ? ' active' : '');
+            d.addEventListener('click', function() { goToTripPage(i); });
+            dots.appendChild(d);
+        })(i);
+    }
+    wrap.appendChild(dots);
+
+    // Ставим transform сразу
+    setTimeout(function() {
+        var tr = $('tripPageTrack');
+        if (tr) tr.style.transform = 'translateX(-' + (currentTripIndex * 100) + '%)';
+    }, 0);
+
+    bindTripPageSwipe(carousel);
+
+    return wrap;
+}
+
+function buildTripCompactWidget(trip) {
+    var s = getTripStats(trip);
+    var cdText = trip.startDate ? countdown(trip.startDate) : '';
+    var dateText = formatTripDate(trip);
+
+    var widget = document.createElement('div');
+    widget.className = 'trip-compact-widget';
+
+    // Строка 1: emoji + name + countdown
+    var row1 = document.createElement('div');
+    row1.className = 'trip-compact-row';
+    row1.innerHTML =
+        '<div class="trip-compact-emoji">' + (trip.emoji || '🎒') + '</div>' +
+        '<div class="trip-compact-info">' +
+            '<div class="trip-compact-name">' + escapeHtml(trip.name || 'Поездка') + '</div>' +
+            '<div class="trip-compact-meta">' + (dateText ? '📅 ' + escapeHtml(dateText) : '') + (trip.city ? ' · 📍 ' + escapeHtml(trip.city) : '') + '</div>' +
+        '</div>' +
+        (cdText ? '<div class="trip-compact-countdown">' + escapeHtml(cdText) + '</div>' : '');
+    widget.appendChild(row1);
+
+    // Строка 2: прогресс-бар + счётчик + процент
+    var row2 = document.createElement('div');
+    row2.className = 'trip-compact-progress';
+    row2.innerHTML =
+        '<div class="trip-compact-bar"><div class="trip-compact-fill" style="width:' + s.percent + '%;background:linear-gradient(90deg,' + (trip.c1 || '#ffb347') + ',' + (trip.c2 || '#ff7e5f') + ')"></div></div>' +
+        '<div class="trip-compact-count">' + s.done + '/' + s.total + '</div>' +
+        '<div class="trip-compact-percent">' + s.percent + '%</div>';
+    widget.appendChild(row2);
+
+    // Клик по карточке — переключение на неё и открытие чек-листа
+    widget.addEventListener('click', function() {
+        var i = activeTrips.indexOf(trip);
+        if (i !== -1) currentTripIndex = i;
+        openChecklistPage();
+    });
+
+    return widget;
+}
+
+function goToTripPage(idx) {
+    var total = activeTrips.length;
+    if (idx < 0 || idx >= total) return;
+    currentTripIndex = idx;
+    saveCurrentTripIndex();
+    var tr = $('tripPageTrack');
+    if (tr) tr.style.transform = 'translateX(-' + (idx * 100) + '%)';
+    document.querySelectorAll('.trip-page-dots .tpdot').forEach(function(d, i) { d.classList.toggle('active', i === idx); });
+    var prevBtn = document.querySelector('.tc-prev');
+    var nextBtn = document.querySelector('.tc-next');
+    if (prevBtn) prevBtn.disabled = (idx === 0);
+    if (nextBtn) nextBtn.disabled = (idx >= total - 1);
+    vibrate();
+
+    // Обновляем погоду и инфо (без полного ре-рендера — иначе карусель пересоберётся и свайп сломается)
+    updateTripPageWeatherAndInfo();
+}
+
+function updateTripPageWeatherAndInfo() {
+    try {
+        var trip = getCurrentTrip();
+        if (!trip) return;
+
+        // Заголовок карточки и кнопки — обновятся через renderTripPage
+        // Но чтобы карусель не пересобиралась (потеряем transform), обновляем только погоду и инфо-блок
+        var cont = $('tripPageContent');
+        if (!cont) return;
+
+        // Проще: перерисовываем только секции после карусели
+        // Находим элементы после wrap
+        var wrap = cont.querySelector('.trip-page-carousel-wrap');
+        if (!wrap) { renderTripPage(); return; }
+
+        // Удаляем всё после wrap
+        var next = wrap.nextSibling;
+        while (next) {
+            var toRemove = next;
+            next = next.nextSibling;
+            cont.removeChild(toRemove);
+        }
+
+        // Перерисовываем хвост (погода, кнопка, инфо, заметки)
+        renderTripPageTail(cont, trip);
+    } catch (e) {
+        bbLogError(9028, 'Ошибка переключения поездки: ' + e.message, { stack: e.stack });
+        renderTripPage();
+    }
+}
+
+function renderTripPageTail(cont, trip) {
+    // Погода
+    if (trip.city) {
+        var weatherTitle = document.createElement('div');
+        weatherTitle.className = 'stats-title';
+        weatherTitle.style.marginTop = '16px';
+        weatherTitle.textContent = 'Погода';
+        cont.appendChild(weatherTitle);
+
+        var weatherBox = document.createElement('div');
+        weatherBox.className = 'weather-card show';
+        weatherBox.id = 'tripWeatherCard';
+        weatherBox.innerHTML = '<div class="weather-head" id="tripWeatherHead"><div class="weather-icon" id="tripWeatherIcon">☀️</div><div class="weather-temp" id="tripWeatherTemp">--</div><div class="weather-info"><div class="weather-city" id="tripWeatherCity">' + escapeHtml(trip.city) + '</div><div class="weather-desc" id="tripWeatherDesc">Загрузка...</div></div><div class="weather-arrow">›</div></div><div class="weather-forecast" id="tripWeatherForecast"></div>';
+        cont.appendChild(weatherBox);
+        loadWeather();
+    }
+
+    // Кнопка
+    var openBtn = document.createElement('button');
+    openBtn.type = 'button';
+    openBtn.className = 'btn-primary';
+    openBtn.style.marginTop = '16px';
+    openBtn.style.marginBottom = '20px';
+    openBtn.innerHTML = '📦 Открыть список вещей';
+    openBtn.addEventListener('click', function() {
+        var i = activeTrips.indexOf(trip);
+        if (i !== -1) currentTripIndex = i;
+        openChecklistPage();
+    });
+    cont.appendChild(openBtn);
+
+    // Информация
+    var infoTitle = document.createElement('div');
+    infoTitle.className = 'stats-title';
+    infoTitle.textContent = 'Информация';
+    cont.appendChild(infoTitle);
+
+    var info = trip.info || {};
+    var hasHotel = info.hotelName || info.hotelAddress || info.hotelBooking || info.hotelPhone;
+    var hasFlight = info.flightNumber || info.flightFrom || info.flightTo || info.flightTime;
+
+    var infoMenu = document.createElement('div');
+    infoMenu.className = 'profile-menu';
+
+    if (hasFlight) {
+        var flightItem = document.createElement('div');
+        flightItem.className = 'profile-item';
+        flightItem.style.cursor = 'default';
+        var flightRoute = [info.flightFrom, info.flightTo].filter(Boolean).join(' → ');
+        flightItem.innerHTML = '<div class="pi-icon">✈️</div><div class="pi-label">Рейс ' + escapeHtml(info.flightNumber || '') + (flightRoute ? ' · ' + escapeHtml(flightRoute) : '') + (info.flightTime ? ' · ' + escapeHtml(info.flightTime) : '') + '</div>';
+        infoMenu.appendChild(flightItem);
+    }
+
+    if (hasHotel) {
+        var hotelItem = document.createElement('div');
+        hotelItem.className = 'profile-item';
+        hotelItem.style.cursor = 'default';
+        hotelItem.innerHTML = '<div class="pi-icon">🏨</div><div class="pi-label">' + escapeHtml(info.hotelName || 'Отель') + (info.hotelBooking ? ' · ' + escapeHtml(info.hotelBooking) : '') + '</div>';
+        infoMenu.appendChild(hotelItem);
+    }
+
+    var editInfoItem = document.createElement('div');
+    editInfoItem.className = 'profile-item';
+    editInfoItem.innerHTML = '<div class="pi-icon">✏️</div><div class="pi-label">' + (hasHotel || hasFlight ? 'Изменить информацию' : 'Добавить информацию') + '</div><div class="pi-arrow">›</div>';
+    editInfoItem.addEventListener('click', openTripInfoModal);
+    infoMenu.appendChild(editInfoItem);
+
+    cont.appendChild(infoMenu);
+
+    // Заметки
+    var notesTitle = document.createElement('div');
+    notesTitle.className = 'stats-title';
+    notesTitle.style.marginTop = '20px';
+    notesTitle.textContent = 'Заметки';
+    cont.appendChild(notesTitle);
+
+    renderNotesSection(cont);
+}
+
+function bindTripPageSwipe(el) {
+    var total = activeTrips.length;
+    if (total < 2) return;
+    var startX = 0, startY = 0, isDown = false, isHoriz = false, track = null;
+    el.addEventListener('touchstart', function(e) {
+        if (e.target.closest('.tc-arrow')) return;
+        if (e.target.closest('.tpdot')) return;
+        startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+        isDown = true; isHoriz = false;
+        track = $('tripPageTrack');
+        if (track) track.style.transition = 'none';
+    }, { passive: true });
+    el.addEventListener('touchmove', function(e) {
+        if (!isDown || !track) return;
+        var dx = e.touches[0].clientX - startX, dy = e.touches[0].clientY - startY;
+        if (!isHoriz && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) isHoriz = true;
+        if (!isHoriz) return;
+        track.style.transform = 'translateX(calc(' + (-currentTripIndex * 100) + '% + ' + dx + 'px))';
+    }, { passive: true });
+    el.addEventListener('touchend', function(e) {
+        if (!isDown || !track) return;
+        isDown = false;
+        var dx = e.changedTouches[0].clientX - startX;
+        var threshold = el.offsetWidth * SWIPE_THRESHOLD;
+        track.style.transition = '';
+        if (isHoriz && Math.abs(dx) > threshold) {
+            if (dx < 0 && currentTripIndex < total - 1) goToTripPage(currentTripIndex + 1);
+            else if (dx > 0 && currentTripIndex > 0) goToTripPage(currentTripIndex - 1);
+            else goToTripPage(currentTripIndex);
+        } else goToTripPage(currentTripIndex);
+    }, { passive: true });
+}
+
 // ============ СОВЕТЫ ============
 function buildTips() {
     try {
@@ -580,7 +843,7 @@ function buildWhatsNewTipItem() {
     item.className = 'tip-item' + (!viewedWhatsNew ? ' whats-new-active' : '');
     var ring = document.createElement('div');
     ring.className = 'tip-ring' + (!viewedWhatsNew ? ' whats-new' : '');
-    if (!viewedWhatsNew) ring.style.background = 'conic-gradient(from 180deg,#ff9a5a,#ff6b8a,#c084fc,#ff9a5a)';
+    if (!viewedWhatsNew) ring.style.background = 'conic-gradient(from 180deg,#4ecb71,#2f9c53,#5ec7ff,#4ecb71)';
     var inner = document.createElement('div');
     inner.className = 'tip-inner';
     inner.style.background = 'linear-gradient(135deg,' + WHATS_NEW.color1 + ',' + WHATS_NEW.color2 + ')';
@@ -690,7 +953,6 @@ function closeTipViewer() {
     resetUIBlocks();
     buildTips();
 }
-
 // ============ ГЛАВНАЯ ============
 function renderHome() {
     try {
@@ -762,6 +1024,7 @@ function goToTrip(idx) {
     var total = activeTrips.length + (canAdd ? 1 : 0);
     if (idx < 0 || idx >= total) return;
     currentTripIndex = idx;
+    saveCurrentTripIndex();
     var tr = $('tripsTrack');
     if (tr) tr.style.transform = 'translateX(-' + (idx * 100) + '%)';
     document.querySelectorAll('.trips-dots .tdot').forEach(function(d, i) { d.classList.toggle('active', i === idx); });
@@ -949,7 +1212,7 @@ function shareActiveTrip() {
     var trip = getCurrentTrip();
     if (!trip) return;
     var s = getTripStats(trip);
-    shareTrip({ name: trip.name, date: trip.date, total: s.total, done: s.done, fullItems: trip.items.map(function(i) { return { text: i.text, qty: i.qty, note: i.note, category: i.category, done: i.done }; }) });
+    shareTrip({ name: trip.name, date: trip.date, total: s.total, done: s.done, fullItems: trip.items.map(function(i) { return { text: i.text, qty: i.qty, note: i.note, done: i.done }; }) });
 }
 
 function repeatTrip(h) {
@@ -963,10 +1226,11 @@ function repeatTrip(h) {
         c1: type ? type.c1 : '#ffb347', c2: type ? type.c2 : '#ff7e5f', ring: type ? type.ring : '#ff7e5f',
         date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }),
         startDate: null, endDate: null, daysCount: 3, city: '',
-        items: items.map(function(i) { var n = normalizeItem(i); n.done = false; return n; })
+        items: items.map(function(i) { var n = normalizeItem(i); n.done = false; return n; }),
+        sources: [], notes: [], info: {}
     });
     currentTripIndex = activeTrips.length - 1;
-    saveActive(); renderHome(); vibrate();
+    saveActive(); saveCurrentTripIndex(); renderHome(); vibrate();
     showToast('Поездка создана заново!');
 }
 
@@ -1064,7 +1328,7 @@ function buildCombinedItems() {
                 }
             } else {
                 merged[key] = {
-                    text: it.text, qty: it.qty, note: it.note, category: it.category,
+                    text: it.text, qty: it.qty, note: it.note,
                     from: src.name || '',
                     listIds: [src.id],
                     done: false
@@ -1135,8 +1399,9 @@ function createTrip() {
     });
     currentTripIndex = activeTrips.length - 1;
     saveActive();
+    saveCurrentTripIndex();
     closeModal('typeModal');
-    renderHome(); renderProfile(); vibrate();
+    renderHome(); renderProfile(); renderTripPage(); vibrate();
     showToast('Поездка создана!');
 }
 
@@ -1215,7 +1480,7 @@ function renderWiz2Items() {
 function wiz2AddQuick() {
     var v = (($('wiz2NewItem') || {}).value || '').trim();
     if (!v) return;
-    wiz.items.push({ text: v, qty: 1, note: '', category: 'other' });
+    wiz.items.push({ text: v, qty: 1, note: '' });
     $('wiz2NewItem').value = '';
     renderWiz2Items();
     $('wiz2NewItem').focus();
@@ -1281,7 +1546,7 @@ function renderTwiz2Items() {
 function twiz2AddQuick() {
     var v = (($('twiz2NewItem') || {}).value || '').trim();
     if (!v) return;
-    twiz.items.push({ text: v, qty: 1, note: '', category: 'other' });
+    twiz.items.push({ text: v, qty: 1, note: '' });
     $('twiz2NewItem').value = '';
     renderTwiz2Items();
     $('twiz2NewItem').focus();
@@ -1306,13 +1571,11 @@ function twiz2Save() {
 function buildAdvancedRow(item, idx, target) {
     var row = document.createElement('div');
     row.className = 'advanced-item-row';
-    var allCats = getAllCategories();
-    var cat = allCats[item.category] || allCats.other || { icon: '📦' };
     var head = document.createElement('div');
     head.className = 'advanced-item-head';
     var td = document.createElement('div');
     td.className = 'item-text';
-    td.innerHTML = cat.icon + ' ' + escapeHtml(item.text) + (item.qty > 1 ? ' <span style="font-size:11.5px;color:var(--text-3);font-weight:600">· ×' + item.qty + '</span>' : '');
+    td.innerHTML = escapeHtml(item.text) + (item.qty > 1 ? ' <span style="font-size:11.5px;color:var(--text-3);font-weight:600">· ×' + item.qty + '</span>' : '');
     if (item.note) {
         var nd = document.createElement('div');
         nd.style.cssText = 'font-size:11.5px;color:var(--text-3);font-style:italic;margin-top:2px;font-weight:500';
@@ -1335,11 +1598,6 @@ function buildAdvancedRow(item, idx, target) {
     qi.min = '1'; qi.max = '99'; qi.placeholder = 'Кол-во';
     qi.addEventListener('input', function() { item.qty = parseInt(qi.value) || 1; });
     fields.appendChild(qi);
-    var cs = document.createElement('select');
-    cs.className = 'mini-field full';
-    fillCategorySelect(cs, item.category);
-    cs.addEventListener('change', function() { if (cs.value !== '__new__') item.category = cs.value; });
-    fields.appendChild(cs);
     var ni = document.createElement('input');
     ni.type = 'text'; ni.className = 'mini-field full'; ni.value = item.note || '';
     ni.placeholder = 'Заметка'; ni.maxLength = 60;
@@ -1349,28 +1607,6 @@ function buildAdvancedRow(item, idx, target) {
     return row;
 }
 
-function fillCategorySelect(selectEl, selected) {
-    selectEl.innerHTML = '';
-    var all = getAllCategories();
-    Object.keys(all).forEach(function(k) {
-        var o = document.createElement('option');
-        o.value = k; o.textContent = all[k].icon + ' ' + all[k].name;
-        if (k === selected) o.selected = true;
-        selectEl.appendChild(o);
-    });
-    var addOpt = document.createElement('option');
-    addOpt.value = '__new__';
-    addOpt.textContent = '➕ Создать категорию...';
-    selectEl.appendChild(addOpt);
-}
-
-function handleCategoryChange(selectEl, fallback, parentModalId) {
-    if (selectEl.value === '__new__') {
-        selectEl.value = fallback;
-        openCategoryModal(selectEl, parentModalId);
-    }
-}
-
 function openAdvanced(target) {
     advTarget = target;
     var p = (target === 'wizard' || target === 'twiz') ? 'adv' : 'adv2';
@@ -1378,8 +1614,6 @@ function openAdvanced(target) {
         var el = $(p + f);
         if (el) el.value = f === 'Qty' ? '1' : '';
     });
-    var s = $(p + 'Cat');
-    if (s) fillCategorySelect(s, 'other');
     if (target === 'wizard') { closeModal('wizardStep2'); openModal('advancedItemModal'); }
     else if (target === 'twiz') { closeModal('tripWizardStep2'); openModal('advancedItemModal'); }
     else { closeModal('listEditorModal'); openModal('advancedItemModal2'); }
@@ -1387,12 +1621,9 @@ function openAdvanced(target) {
 function advConfirm() {
     var n = (($('advName') || {}).value || '').trim();
     if (!n) { showToast('Введите название'); return; }
-    var cat = ($('advCat') || {}).value || 'other';
-    if (cat === '__new__') cat = 'other';
     var newItem = {
         text: n, qty: parseInt($('advQty').value) || 1,
-        note: (($('advNote') || {}).value || '').trim(),
-        category: cat
+        note: (($('advNote') || {}).value || '').trim()
     };
     closeModal('advancedItemModal');
     if (advTarget === 'twiz') { twiz.items.push(newItem); openTwiz2(); }
@@ -1401,9 +1632,7 @@ function advConfirm() {
 function adv2Confirm() {
     var n = (($('adv2Name') || {}).value || '').trim();
     if (!n) { showToast('Введите название'); return; }
-    var cat = ($('adv2Cat') || {}).value || 'other';
-    if (cat === '__new__') cat = 'other';
-    editing.items.push({ text: n, qty: parseInt($('adv2Qty').value) || 1, note: (($('adv2Note') || {}).value || '').trim(), category: cat });
+    editing.items.push({ text: n, qty: parseInt($('adv2Qty').value) || 1, note: (($('adv2Note') || {}).value || '').trim() });
     closeModal('advancedItemModal2');
     openEditorById(editing.id);
 }
@@ -1456,7 +1685,7 @@ function renderEditorItems() {
 function editorAddQuick() {
     var v = (($('newItemInput') || {}).value || '').trim();
     if (!v) return;
-    editing.items.push({ text: v, qty: 1, note: '', category: 'other' });
+    editing.items.push({ text: v, qty: 1, note: '' });
     $('newItemInput').value = '';
     renderEditorItems(); updateEditorPreview();
     $('newItemInput').focus();
@@ -1495,11 +1724,12 @@ function completeActiveTrip() {
         id: trip.id, type: trip.type, name: trip.name, emoji: trip.emoji, date: trip.date,
         city: trip.city || '', startDate: trip.startDate || null,
         total: s.total, done: s.done, listIds: trip.listIds || [],
-        fullItems: trip.items.map(function(i) { return { text: i.text, qty: i.qty, note: i.note, category: i.category }; })
+        fullItems: trip.items.map(function(i) { return { text: i.text, qty: i.qty, note: i.note }; })
     });
     activeTrips.splice(currentTripIndex, 1);
     if (currentTripIndex >= activeTrips.length) currentTripIndex = Math.max(0, activeTrips.length - 1);
-    saveActive(); saveHistory(); renderHome(); renderProfile(); renderTripPage();
+    saveActive(); saveCurrentTripIndex(); saveHistory();
+    renderHome(); renderProfile(); renderTripPage();
 }
 function deleteHistory(id) {
     tripHistory = tripHistory.filter(function(h) { return h.id !== id; });
@@ -1525,6 +1755,7 @@ function closeChecklistPage() {
     var pg = $('checklistPage'); if (pg) pg.classList.remove('active');
     resetUIBlocks();
     renderHome();
+    renderTripPage();
 }
 
 function renderChecklistPage() {
@@ -1554,8 +1785,7 @@ function renderChecklistPage() {
         cont.innerHTML = '';
         var q = searchQuery.toLowerCase().trim();
 
-        // Заметки о поездке — сверху, до вещей
-        if (!q) renderNotesSection(cont);
+        // Заметки БОЛЬШЕ НЕ РЕНДЕРИМ здесь — они только на TripPage (задача #1)
 
         var vis = [];
         trip.items.forEach(function(it, i) {
@@ -1634,7 +1864,6 @@ function renderChecklistPage() {
             cont.appendChild(sec);
         });
 
-        // Вещи без списка — в конце, без заголовка
         if (grouped['__other__'] && grouped['__other__'].length) {
             grouped['__other__'].forEach(function(v) {
                 cont.appendChild(buildSwipeItem(v.item, v.idx));
@@ -1734,7 +1963,7 @@ function deleteActiveItem(idx) {
         if (!trip || !trip.items[idx]) return;
         trip.items.splice(idx, 1);
         saveActive(); vibrate();
-        renderChecklistPage(); renderHome(); renderProfile();
+        renderChecklistPage(); renderHome(); renderProfile(); renderTripPage();
         showToast('Удалено');
     } catch (e) { bbLogError(7002, 'Ошибка удаления вещи', { stack: e.stack }); }
 }
@@ -1790,7 +2019,7 @@ function toggleItem(idx) {
         var all = trip.items.every(function(i) { return i.done; });
         if (!was && all) { fireConfetti(); vibrateStrong(); }
         saveActive();
-        renderChecklistPage(); renderHome(); renderProfile();
+        renderChecklistPage(); renderHome(); renderProfile(); renderTripPage();
     } catch (e) { bbLogError(7001, 'Ошибка отметки вещи', { stack: e.stack }); }
 }
 
@@ -1833,6 +2062,7 @@ function removeListFromTrip(listId) {
     saveActive();
     renderChecklistPage();
     renderHome();
+    renderTripPage();
     vibrate();
     showToast('Список удалён');
 }
@@ -1879,7 +2109,6 @@ function renderWeather(data) {
     var w = WEATHER_CODES[code] || { icon: '🌡️', desc: 'Погода' };
     var trip = getCurrentTrip() || {};
 
-    // Описание с советом
     var hint = w.desc;
     if (cur.temperature_2m !== undefined) {
         if (cur.temperature_2m < 0) hint += ' · Возьми тёплые вещи 🧥';
@@ -1890,12 +2119,10 @@ function renderWeather(data) {
     if (code >= 51 && code <= 82) hint += ' · Не забудь зонт ☔';
     if (code >= 71 && code <= 75) hint += ' · Снег ❄️';
 
-    // Прогноз на 5 дней
     var daily = data.daily || {};
     var days = daily.time || [], codes = daily.weather_code || [], mx = daily.temperature_2m_max || [], mn = daily.temperature_2m_min || [];
     var dn = ['вс','пн','вт','ср','чт','пт','сб'];
 
-    // Рендер в обе карточки
     renderWeatherToCard('weatherCard', 'weatherIcon', 'weatherTemp', 'weatherCity', 'weatherDesc', 'weatherForecast', data, w, hint, trip, days, codes, mx, mn, dn);
     renderWeatherToCard('tripWeatherCard', 'tripWeatherIcon', 'tripWeatherTemp', 'tripWeatherCity', 'tripWeatherDesc', 'tripWeatherForecast', data, w, hint, trip, days, codes, mx, mn, dn);
 }
@@ -1926,7 +2153,6 @@ function renderWeatherToCard(cardId, iconId, tempId, cityId, descId, forecastId,
         fe.appendChild(dayEl);
     }
 
-    // Тап для раскрытия прогноза
     attachWeatherTapToCard(cardId);
 }
 
@@ -1948,11 +2174,8 @@ function openAddItemModal() {
     if (!trip) { showToast('Нет активной поездки'); return; }
     ['Name','Note'].forEach(function(f) { var el = $('addItem' + f); if (el) el.value = ''; });
     var q = $('addItemQty'); if (q) q.value = '1';
-    var s = $('addItemCat');
-    if (s) fillCategorySelect(s, 'other');
     var t = $('addItemModalTitle'); if (t) t.textContent = 'Новая вещь';
     var btn = $('confirmAddItemBtn'); if (btn) btn.textContent = 'Добавить';
-    var overlay = $('addItemModal'); if (overlay) overlay.classList.add('above-checklist');
     openModal('addItemModal');
 }
 
@@ -1964,11 +2187,8 @@ function openEditItemModal(idx) {
     var n = $('addItemName'); if (n) n.value = item.text || '';
     var q = $('addItemQty'); if (q) q.value = item.qty || 1;
     var no = $('addItemNote'); if (no) no.value = item.note || '';
-    var s = $('addItemCat');
-    if (s) fillCategorySelect(s, item.category || 'other');
     var t = $('addItemModalTitle'); if (t) t.textContent = 'Править вещь';
     var btn = $('confirmAddItemBtn'); if (btn) btn.textContent = 'Сохранить';
-    var overlay = $('addItemModal'); if (overlay) overlay.classList.add('above-checklist');
     openModal('addItemModal');
 }
 
@@ -1978,23 +2198,19 @@ function confirmAddItem() {
         if (!trip) return;
         var n = (($('addItemName') || {}).value || '').trim();
         if (!n) { showToast('Введите название'); return; }
-        var cat = ($('addItemCat') || {}).value || 'other';
-        if (cat === '__new__') cat = 'other';
         var data = {
             text: n,
             qty: parseInt($('addItemQty').value) || 1,
-            note: (($('addItemNote') || {}).value || '').trim(),
-            category: cat
+            note: (($('addItemNote') || {}).value || '').trim()
         };
         if (editingItemIdx !== null && trip.items[editingItemIdx]) {
             var old = trip.items[editingItemIdx];
             old.text = data.text;
             old.qty = data.qty;
             old.note = data.note;
-            old.category = data.category;
             saveActive();
             closeAddItemModal();
-            renderChecklistPage(); renderHome(); vibrate();
+            renderChecklistPage(); renderHome(); renderTripPage(); vibrate();
             showToast('Сохранено');
         } else {
             data.done = false;
@@ -2003,7 +2219,7 @@ function confirmAddItem() {
             trip.items.push(data);
             saveActive();
             closeAddItemModal();
-            renderChecklistPage(); renderHome(); vibrate();
+            renderChecklistPage(); renderHome(); renderTripPage(); vibrate();
             showToast('Вещь добавлена!');
         }
     } catch (e) { bbLogError(7004, 'Ошибка добавления/правки вещи', { stack: e.stack }); }
@@ -2014,7 +2230,6 @@ function closeAddItemModal() {
     var t = $('addItemModalTitle'); if (t) t.textContent = 'Новая вещь';
     var btn = $('confirmAddItemBtn'); if (btn) btn.textContent = 'Добавить';
     closeModal('addItemModal');
-    var overlay = $('addItemModal'); if (overlay) overlay.classList.remove('above-checklist');
 }
 
 // ============ КОНФЕТТИ ============
@@ -2045,7 +2260,6 @@ function renderProfile() {
         e = $('profileCompletedTrips'); if (e) e.textContent = s.completedTrips;
         e = $('profileItemsPacked'); if (e) e.textContent = s.allDone;
         e = $('profileName'); if (e) e.textContent = profile.name || 'Эрик';
-        e = $('catCountLabel'); if (e) e.textContent = Object.keys(customCategories).length;
         e = $('errorCountLabel'); if (e) e.textContent = bbGetErrorLog().length;
         var av = $('profileAvatar'), lt = $('profileAvatarLetter');
         if (av && lt) {
@@ -2130,105 +2344,6 @@ function resetAvatar() {
     renderProfile();
 }
 
-// ============ КАТЕГОРИИ ============
-function openCategoryModal(targetSelect, parentModalId) {
-    pendingCategoryTarget = targetSelect || null;
-    categoryParent = parentModalId || null;
-    var ni = $('newCatName'); if (ni) ni.value = '';
-    var p = $('catEmojiPicker'); if (!p) return;
-    p.innerHTML = '';
-    CAT_EMOJI.forEach(function(em) {
-        var d = document.createElement('div');
-        d.className = 'emoji-choice' + (em === '📦' ? ' selected' : '');
-        d.textContent = em;
-        d.dataset.emoji = em;
-        d.addEventListener('click', function() {
-            p.querySelectorAll('.emoji-choice').forEach(function(x) { x.classList.remove('selected'); });
-            d.classList.add('selected');
-        });
-        p.appendChild(d);
-    });
-    if (categoryParent) {
-        var parent = $(categoryParent);
-        if (parent) { parent.classList.remove('active'); }
-    }
-    var cm = $('categoryModal');
-    if (cm) { cm.classList.add('active'); cm.classList.add('on-top2'); cm.style.display = ''; }
-    resetUIBlocks();
-}
-function cancelCategoryCreation() {
-    var cm = $('categoryModal');
-    if (cm) { cm.classList.remove('active'); cm.classList.remove('on-top2'); cm.style.display = ''; }
-    if (categoryParent) {
-        var parent = $(categoryParent);
-        if (parent) {
-            parent.classList.add('active');
-            if (categoryParent === 'manageCategoriesModal') renderCatList();
-        }
-        categoryParent = null;
-    }
-    pendingCategoryTarget = null;
-    resetUIBlocks();
-}
-function saveNewCategory() {
-    try {
-        var name = (($('newCatName') || {}).value || '').trim();
-        if (!name) { showToast('Введите название'); return; }
-        var emojiEl = document.querySelector('#catEmojiPicker .emoji-choice.selected');
-        var emoji = emojiEl ? emojiEl.dataset.emoji : '📦';
-        var id = 'custcat_' + Date.now();
-        customCategories[id] = { name: name, icon: emoji };
-        saveCustomCategories();
-        var cm = $('categoryModal');
-        if (cm) { cm.classList.remove('active'); cm.classList.remove('on-top2'); cm.style.display = ''; }
-        var target = pendingCategoryTarget;
-        if (target) { fillCategorySelect(target, id); target.value = id; }
-        if (categoryParent) {
-            var parent = $(categoryParent);
-            if (parent) {
-                parent.classList.add('active');
-                if (categoryParent === 'manageCategoriesModal') renderCatList();
-            }
-            categoryParent = null;
-        }
-        pendingCategoryTarget = null;
-        renderProfile();
-        showToast('Категория создана!');
-    } catch (e) { bbLogError(8003, 'Ошибка сохранения категории', { stack: e.stack }); }
-}
-function openManageCategories() { renderCatList(); openModal('manageCategoriesModal'); }
-function renderCatList() {
-    var cont = $('catListContainer'); if (!cont) return;
-    cont.innerHTML = '';
-    var keys = Object.keys(customCategories);
-    if (!keys.length) {
-        var emp = document.createElement('div');
-        emp.style.cssText = 'text-align:center;padding:24px;color:var(--text-3);font-size:13.5px;font-weight:500';
-        emp.textContent = 'Пока нет своих категорий. Создайте первую!';
-        cont.appendChild(emp);
-        return;
-    }
-    keys.forEach(function(k) {
-        var c = customCategories[k];
-        var item = document.createElement('div');
-        item.className = 'cat-list-item';
-        item.innerHTML = '<div class="cli-emoji">' + c.icon + '</div><div class="cli-name">' + escapeHtml(c.name) + '</div>';
-        var del = document.createElement('button');
-        del.type = 'button'; del.className = 'cli-del'; del.textContent = '✕';
-        del.addEventListener('click', function() {
-            if (confirm('Удалить категорию "' + c.name + '"?')) {
-                delete customCategories[k];
-                saveCustomCategories();
-                renderCatList(); renderProfile();
-                if ($('checklistPage') && $('checklistPage').classList.contains('active')) renderChecklistPage();
-                showToast('Удалено');
-            }
-        });
-        item.appendChild(del);
-        cont.appendChild(item);
-    });
-}
-
 // ============ ЭКСПОРТ / ИМПОРТ ============
 function exportData() {
     try {
@@ -2239,7 +2354,6 @@ function exportData() {
             tripHistory: tripHistory,
             customTypes: customTypes,
             customTripTypes: customTripTypes,
-            customCategories: customCategories,
             profile: profile,
             settings: settings,
             achievementsState: achievementsState
@@ -2295,7 +2409,6 @@ function importData(file) {
                 saveJSON('bybag_history', data.tripHistory || []);
                 saveJSON('bybag_custom_types', data.customTypes || {});
                 saveJSON('bybag_custom_trip_types', data.customTripTypes || {});
-                saveJSON('bybag_custom_categories', data.customCategories || {});
                 saveJSON('bybag_profile', data.profile || { name: 'Эрик', avatar: null });
                 saveJSON('bybag_settings', data.settings || { dark: false, notif: true, vibrate: true, hideDone: false });
                 saveJSON('bybag_achievements', data.achievementsState || {});
