@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="myBag">
 <meta name="mobile-web-app-capable" content="yes">
-<title>myBag v2.7.0</title>
+<title>myBag v2.8.0</title>
 
 <link rel="apple-touch-icon" href="Logo.png">
 <link rel="apple-touch-icon" sizes="180x180" href="Logo.png">
@@ -67,6 +67,9 @@
 <div class="page" id="page-profile">
     <div class="container">
         <div class="profile-hero">
+            <button type="button" class="profile-settings-btn" id="profileSettingsBtn" aria-label="Настройки">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            </button>
             <div class="profile-avatar" id="profileAvatar">
                 <span id="profileAvatarLetter">Э</span>
                 <span class="avatar-edit"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
@@ -84,36 +87,9 @@
         </div>
         <div class="stats-title">Достижения</div>
         <div class="achievements-grid" id="achievementsGrid"></div>
-        <div class="stats-title">Настройки</div>
-        <div class="profile-menu">
-            <div class="profile-item" id="editProfileBtn"><div class="pi-icon">✏️</div><div class="pi-label">Редактировать профиль</div><div class="pi-arrow">›</div></div>
-            <div class="profile-item" id="manageCategoriesBtn"><div class="pi-icon">🏷️</div><div class="pi-label">Мои категории</div><div class="pi-value" id="catCountLabel">0</div><div class="pi-arrow">›</div></div>
-            <div class="profile-item" id="darkModeToggleItem"><div class="pi-icon">🌙</div><div class="pi-label">Тёмная тема</div><div class="toggle" id="darkToggle"></div></div>
-            <div class="profile-item" id="notifToggleItem"><div class="pi-icon">🔔</div><div class="pi-label">Напоминания</div><div class="toggle" id="notifToggle"></div></div>
-            <div class="profile-item" id="vibrateToggleItem"><div class="pi-icon">📳</div><div class="pi-label">Вибрация</div><div class="toggle" id="vibrateToggle"></div></div>
-            <div class="profile-item" id="showOnboardingBtn"><div class="pi-icon">📖</div><div class="pi-label">О приложении</div><div class="pi-arrow">›</div></div>
-        </div>
-        <div class="stats-title">Данные</div>
-        <div class="profile-menu">
-            <div class="profile-item" id="exportDataBtn">
-                <div class="pi-icon">📤</div>
-                <div class="pi-label">Экспорт данных</div>
-                <div class="pi-arrow">›</div>
-            </div>
-            <div class="profile-item" id="importDataBtn">
-                <div class="pi-icon">📥</div>
-                <div class="pi-label">Импорт данных</div>
-                <div class="pi-arrow">›</div>
-            </div>
-        </div>
-        <div class="stats-title">О приложении</div>
-        <div class="profile-menu">
-            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.7.0</div></div>
-            <div class="profile-item" id="viewErrorLogBtn"><div class="pi-icon">🐛</div><div class="pi-label">Журнал ошибок</div><div class="pi-value" id="errorCountLabel">0</div><div class="pi-arrow">›</div></div>
-        </div>
         <input type="file" id="importDataFile" accept="application/json,.json" style="display:none">
 
-        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:8px 0 20px;opacity:.6">myBag v2.7.0</div>
+        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:20px 0 20px;opacity:.6">myBag v2.8.0</div>
     </div>
 </div>
 
@@ -124,6 +100,47 @@
     <button type="button" class="nav-item" data-page="profile"><span class="nav-icon nav-avatar" id="navAvatar"><span id="navAvatarLetter">Э</span></span><span class="nav-label">Профиль</span></button>
 </div>
 
+<!-- ============ СТРАНИЦА НАСТРОЕК ============ -->
+<div class="settings-page" id="settingsPage">
+    <div class="settings-page-header">
+        <button type="button" class="back-btn" id="settingsBackBtn">←</button>
+        <div class="settings-page-title">
+            <h2>Настройки</h2>
+        </div>
+        <div class="settings-page-actions"></div>
+    </div>
+    <div class="settings-page-content">
+
+        <div class="stats-title" style="margin-top:4px">Профиль</div>
+        <div class="profile-menu">
+            <div class="profile-item" id="settingsEditProfileBtn"><div class="pi-icon">✏️</div><div class="pi-label">Редактировать профиль</div><div class="pi-arrow">›</div></div>
+        </div>
+
+        <div class="stats-title" style="margin-top:20px">Общие</div>
+        <div class="profile-menu">
+            <div class="profile-item" id="darkModeToggleItem"><div class="pi-icon">🌙</div><div class="pi-label">Тёмная тема</div><div class="toggle" id="darkToggle"></div></div>
+            <div class="profile-item" id="notifToggleItem"><div class="pi-icon">🔔</div><div class="pi-label">Напоминания</div><div class="toggle" id="notifToggle"></div></div>
+            <div class="profile-item" id="vibrateToggleItem"><div class="pi-icon">📳</div><div class="pi-label">Вибрация</div><div class="toggle" id="vibrateToggle"></div></div>
+        </div>
+
+        <div class="stats-title" style="margin-top:20px">Данные</div>
+        <div class="profile-menu">
+            <div class="profile-item" id="exportDataBtn"><div class="pi-icon">📤</div><div class="pi-label">Экспорт данных</div><div class="pi-arrow">›</div></div>
+            <div class="profile-item" id="importDataBtn"><div class="pi-icon">📥</div><div class="pi-label">Импорт данных</div><div class="pi-arrow">›</div></div>
+        </div>
+
+        <div class="stats-title" style="margin-top:20px">О приложении</div>
+        <div class="profile-menu">
+            <div class="profile-item" id="showOnboardingBtn"><div class="pi-icon">📖</div><div class="pi-label">О приложении</div><div class="pi-arrow">›</div></div>
+            <div class="profile-item"><div class="pi-icon">ℹ️</div><div class="pi-label">Версия</div><div class="pi-value">2.8.0</div></div>
+            <div class="profile-item" id="viewErrorLogBtn"><div class="pi-icon">🐛</div><div class="pi-label">Журнал ошибок</div><div class="pi-value" id="errorCountLabel">0</div><div class="pi-arrow">›</div></div>
+        </div>
+
+        <div style="text-align:center;font-size:11px;color:var(--text-3);font-weight:600;padding:20px 0 20px;opacity:.6">myBag v2.8.0</div>
+    </div>
+</div>
+
+<!-- ============ ЧЕК-ЛИСТ ============ -->
 <div class="checklist-page" id="checklistPage">
     <div class="checklist-page-header">
         <button type="button" class="back-btn" id="checklistBackBtn">←</button>
@@ -165,6 +182,7 @@
     </div>
 </div>
 
+<!-- ============ МОДАЛКА: НОВАЯ ПОЕЗДКА ============ -->
 <div class="modal-overlay" id="typeModal">
     <div class="modal">
         <button type="button" class="modal-close" data-close="typeModal">✕</button>
@@ -187,6 +205,7 @@
     </div>
 </div>
 
+<!-- ============ МАСТЕР СПИСКА ШАГ 1 ============ -->
 <div class="modal-overlay" id="wizardStep1">
     <div class="modal">
         <button type="button" class="modal-close" data-close="wizardStep1">✕</button>
@@ -207,6 +226,7 @@
     </div>
 </div>
 
+<!-- ============ МАСТЕР СПИСКА ШАГ 2 ============ -->
 <div class="modal-overlay" id="wizardStep2">
     <div class="modal">
         <button type="button" class="modal-close" data-close="wizardStep2">✕</button>
@@ -229,6 +249,7 @@
     </div>
 </div>
 
+<!-- ============ МАСТЕР ТИПА ШАГ 1 ============ -->
 <div class="modal-overlay" id="tripWizardStep1">
     <div class="modal">
         <button type="button" class="modal-close" data-close="tripWizardStep1">✕</button>
@@ -249,6 +270,7 @@
     </div>
 </div>
 
+<!-- ============ МАСТЕР ТИПА ШАГ 2 ============ -->
 <div class="modal-overlay" id="tripWizardStep2">
     <div class="modal">
         <button type="button" class="modal-close" data-close="tripWizardStep2">✕</button>
@@ -270,6 +292,7 @@
     </div>
 </div>
 
+<!-- ============ ADVANCED ITEM (мастера) ============ -->
 <div class="modal-overlay" id="advancedItemModal">
     <div class="modal">
         <button type="button" class="modal-close" data-close="advancedItemModal">✕</button>
@@ -277,8 +300,6 @@
         <h2>Подробно о вещи</h2>
         <div class="field-label">Название</div>
         <input type="text" class="input-field" id="advName" placeholder="Например: Зубная щётка" maxlength="60">
-        <div class="field-label">Категория</div>
-        <select class="input-field" id="advCat"></select>
         <div class="field-label">Количество</div>
         <input type="number" class="input-field" id="advQty" value="1" min="1" max="99">
         <div class="field-label">Заметка</div>
@@ -287,6 +308,7 @@
     </div>
 </div>
 
+<!-- ============ РЕДАКТОР СПИСКА ============ -->
 <div class="modal-overlay" id="listEditorModal">
     <div class="modal">
         <button type="button" class="modal-close" data-close="listEditorModal">✕</button>
@@ -315,6 +337,7 @@
     </div>
 </div>
 
+<!-- ============ ADVANCED ITEM 2 (редактор) ============ -->
 <div class="modal-overlay" id="advancedItemModal2">
     <div class="modal">
         <button type="button" class="modal-close" data-close="advancedItemModal2">✕</button>
@@ -322,8 +345,6 @@
         <h2>Подробно о вещи</h2>
         <div class="field-label">Название</div>
         <input type="text" class="input-field" id="adv2Name" placeholder="Например: Зубная щётка" maxlength="60">
-        <div class="field-label">Категория</div>
-        <select class="input-field" id="adv2Cat"></select>
         <div class="field-label">Количество</div>
         <input type="number" class="input-field" id="adv2Qty" value="1" min="1" max="99">
         <div class="field-label">Заметка</div>
@@ -332,6 +353,7 @@
     </div>
 </div>
 
+<!-- ============ МОДАЛКА ВЕЩИ (чек-лист) ============ -->
 <div class="modal-overlay above-checklist" id="addItemModal">
     <div class="modal">
         <button type="button" class="modal-close" data-close="addItemModal">✕</button>
@@ -339,8 +361,6 @@
         <h2 id="addItemModalTitle">Новая вещь</h2>
         <div class="field-label">Название</div>
         <input type="text" class="input-field" id="addItemName" placeholder="Например: Зубная щётка" maxlength="60">
-        <div class="field-label">Категория</div>
-        <select class="input-field" id="addItemCat"></select>
         <div class="field-label">Количество</div>
         <input type="number" class="input-field" id="addItemQty" value="1" min="1" max="99">
         <div class="field-label">Заметка</div>
@@ -349,6 +369,7 @@
     </div>
 </div>
 
+<!-- ============ РЕДАКТИРОВАНИЕ ПРОФИЛЯ ============ -->
 <div class="modal-overlay" id="editProfileModal">
     <div class="modal">
         <button type="button" class="modal-close" data-close="editProfileModal">✕</button>
@@ -368,29 +389,7 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="categoryModal">
-    <div class="modal">
-        <button type="button" class="modal-close" id="categoryCloseBtn">✕</button>
-        <div class="modal-handle"></div>
-        <h2>Новая категория</h2>
-        <div class="field-label">Название</div>
-        <input type="text" class="input-field" id="newCatName" placeholder="Например: Спорт" maxlength="20">
-        <div class="field-label">Иконка</div>
-        <div class="emoji-picker" id="catEmojiPicker"></div>
-        <button type="button" class="btn-primary" id="saveCatBtn">Сохранить категорию</button>
-    </div>
-</div>
-
-<div class="modal-overlay" id="manageCategoriesModal">
-    <div class="modal">
-        <button type="button" class="modal-close" data-close="manageCategoriesModal">✕</button>
-        <div class="modal-handle"></div>
-        <h2>Мои категории</h2>
-        <div id="catListContainer"></div>
-        <button type="button" class="btn-primary" id="addNewCatFromList" style="margin-top:14px">+ Создать категорию</button>
-    </div>
-</div>
-
+<!-- ============ ЖУРНАЛ ОШИБОК ============ -->
 <div class="modal-overlay" id="errorLogModal">
     <div class="modal">
         <button type="button" class="modal-close" data-close="errorLogModal">✕</button>
@@ -402,6 +401,7 @@
     </div>
 </div>
 
+<!-- ============ МОДАЛКА: ДОБАВИТЬ СПИСОК В ПОЕЗДКУ ============ -->
 <div class="modal-overlay above-checklist" id="addListToTripModal">
     <div class="modal">
         <button type="button" class="modal-close" data-close="addListToTripModal">✕</button>
@@ -413,6 +413,7 @@
     </div>
 </div>
 
+<!-- ============ МОДАЛКА: ИНФОРМАЦИЯ О ПОЕЗДКЕ ============ -->
 <div class="modal-overlay above-checklist" id="tripInfoModal">
     <div class="modal">
         <button type="button" class="modal-close" data-close="tripInfoModal">✕</button>
@@ -432,6 +433,7 @@
     </div>
 </div>
 
+<!-- ============ МОДАЛКА: ЗАМЕТКА ============ -->
 <div class="modal-overlay above-checklist" id="noteModal">
     <div class="modal">
         <button type="button" class="modal-close" data-close="noteModal">✕</button>
@@ -446,6 +448,7 @@
     </div>
 </div>
 
+<!-- ============ УВЕДОМЛЕНИЯ ============ -->
 <div class="modal-overlay" id="notifOnboardModal">
     <div class="modal">
         <div style="padding:8px 4px">
@@ -463,6 +466,7 @@
     </div>
 </div>
 
+<!-- ============ ОНБОРДИНГ ============ -->
 <div class="onboarding-viewer" id="onboardingViewer">
     <div class="onb-slide" id="onbSlide">
         <div class="onb-bg-emoji" id="onbBgEmoji">🧳</div>
@@ -477,6 +481,7 @@
     </div>
 </div>
 
+<!-- ============ TIP VIEWER ============ -->
 <div class="tip-viewer" id="tipViewer">
     <div class="tip-viewer-bg" id="tipViewerBg"></div>
     <div class="tip-viewer-deco" id="tipViewerDeco">💡</div>
