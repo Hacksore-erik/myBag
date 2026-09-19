@@ -250,3 +250,14 @@ body.dark .fab-menu-item:active{background:var(--card-solid)}
 .nav-avatar.has-photo{color:transparent}
 .nav-avatar #navAvatarLetter{line-height:1;display:block}
 .nav-avatar.has-photo #navAvatarLetter{display:none}
+
+/* ============================================================
+   ЗАМЕТКИ О ПОЕЗДКЕ (v2.7.0)
+   ============================================================ */
+.notes-section{margin-bottom:18px}
+.note-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--card);border:1.5px solid var(--border-soft);border-radius:14px;margin-bottom:8px;cursor:pointer;transition:transform .15s ease;-webkit-tap-highlight-color:transparent}
+.note-item:active{transform:scale(.98);background:var(--card-solid)}
+.note-icon{font-size:20px;line-height:1.2;flex-shrink:0;width:28px;text-align:center}
+.note-text{flex:1;min-width:0;font-size:14.5px;font-weight:600;color:var(--text);line-height:1.4;word-break:break-word}
+.note-add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:transparent;border:1.5px dashed var(--border-soft);border-radius:14px;color:var(--text-2);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s ease,border-color .15s ease;-webkit-tap-highlight-color:transparent}
+.note-add-btn:active{background:var(--card-solid);border-color:var(--border)}
