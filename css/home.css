@@ -203,7 +203,6 @@ body.dark .search-highlight{background:rgba(255,210,90,.4);color:#fff}
 .forecast-day .fd-name{font-size:8px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:3px}
 .forecast-day .fd-icon{font-size:16px;margin-bottom:3px}
 .forecast-day .fd-temp{font-size:9.5px;font-weight:700;color:var(--text)}
-
 /* Фикс — модалка категории поверх других */
 .modal-overlay.on-top2{z-index:9999!important}
 
