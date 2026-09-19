@@ -1574,12 +1574,20 @@ function loadWeather() {
 function renderWeather(data) {
     var card = $('weatherCard'); if (!card) return;
     card.classList.add('show');
+
     var cur = data.current || {}, code = cur.weather_code || 0;
     var w = WEATHER_CODES[code] || { icon: '🌡️', desc: 'Погода' };
-    var ce = $('weatherCity'); if (ce) ce.textContent = data._cityName || (getCurrentTrip() || {}).city || '';
-    var te = $('weatherTemp'); if (te) te.textContent = Math.round(cur.temperature_2m) + '°';
+
+    // Иконка погоды — крупная
     var ie = $('weatherIcon'); if (ie) ie.textContent = w.icon;
-    var de = $('weatherDesc');
+
+    // Температура
+    var te = $('weatherTemp'); if (te) te.textContent = Math.round(cur.temperature_2m) + '°';
+
+    // Город
+    var ce = $('weatherCity'); if (ce) ce.textContent = data._cityName || (getCurrentTrip() || {}).city || '';
+
+    // Описание с советом
     var hint = w.desc;
     if (cur.temperature_2m !== undefined) {
         if (cur.temperature_2m < 0) hint += ' · Возьми тёплые вещи 🧥';
@@ -1589,7 +1597,9 @@ function renderWeather(data) {
     }
     if (code >= 51 && code <= 82) hint += ' · Не забудь зонт ☔';
     if (code >= 71 && code <= 75) hint += ' · Снег ❄️';
-    if (de) de.textContent = hint;
+    var de = $('weatherDesc'); if (de) de.textContent = hint;
+
+    // Прогноз на 5 дней
     var fe = $('weatherForecast'); if (!fe) return;
     fe.innerHTML = '';
     var daily = data.daily || {};
@@ -1600,9 +1610,31 @@ function renderWeather(data) {
         var ww = WEATHER_CODES[codes[i]] || { icon: '🌡️' };
         var dayEl = document.createElement('div');
         dayEl.className = 'forecast-day';
-        dayEl.innerHTML = '<div class="fd-name">' + dn[d.getDay()] + '</div><div class="fd-icon">' + ww.icon + '</div><div class="fd-temp">' + Math.round(mx[i]) + '° / ' + Math.round(mn[i]) + '°</div>';
+        dayEl.innerHTML = '<div class="fd-name">' + dn[d.getDay()] + '</div>' +
+                          '<div class="fd-icon">' + ww.icon + '</div>' +
+                          '<div class="fd-temps"><div class="fd-max">' + Math.round(mx[i]) + '°</div>' +
+                          '<div class="fd-min">' + Math.round(mn[i]) + '°</div></div>';
         fe.appendChild(dayEl);
     }
+
+    // Убираем expanded при новом рендере (сбрасываем свёрнутое)
+    card.classList.remove('expanded');
+    // Подключаем/переподключаем обработчик тапа
+    attachWeatherTap();
+}
+
+function attachWeatherTap() {
+    var card = $('weatherCard'); if (!card) return;
+    var head = card.querySelector('.weather-head');
+    if (!head) return;
+    // Убираем старый обработчик если был
+    if (card._weatherHandler) head.removeEventListener('click', card._weatherHandler);
+    // Создаём новый
+    card._weatherHandler = function() {
+        card.classList.toggle('expanded');
+        vibrate();
+    };
+    head.addEventListener('click', card._weatherHandler);
 }
 
 // ============ ДОБАВЛЕНИЕ ВЕЩИ ============
