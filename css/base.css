@@ -57,3 +57,67 @@ body.dark #errorScreen .err-code{background:rgba(255,94,138,.15)}
 #errorScreen p{font-size:13px;color:var(--text-2);margin-bottom:16px;line-height:1.5;max-width:340px}
 #errorScreen button{padding:12px 18px;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#fff;border:none;border-radius:100px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;margin:3px}
 #errorScreen .err-msg{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:10.5px;color:var(--text-3);background:var(--card);padding:14px;border-radius:14px;margin-top:16px;max-width:100%;word-break:break-word;white-space:pre-wrap;text-align:left;-webkit-user-select:text;user-select:text;max-height:38vh;overflow-y:auto;-webkit-overflow-scrolling:touch;line-height:1.5}
+
+/* ============================================================
+   ЭКРАН-ЗАГЛУШКА
+   ============================================================ */
+.blocked-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #ff9a5a 0%, #ff6b8a 55%, #d6336c 100%);
+    padding: 32px 24px;
+    overflow: hidden;
+}
+.blocked-screen.show {
+    display: flex;
+}
+.blocked-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    max-width: 340px;
+    width: 100%;
+}
+.blocked-logo {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,.25));
+    animation: blockedFloat 3s ease-in-out infinite;
+    margin-bottom: 32px;
+}
+@keyframes blockedFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+}
+.blocked-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.35;
+    letter-spacing: -.3px;
+    white-space: pre-line;
+    text-shadow: 0 2px 12px rgba(0,0,0,.18);
+    margin-bottom: 20px;
+}
+.blocked-subtitle {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255,255,255,.85);
+    line-height: 1.5;
+    text-shadow: 0 1px 6px rgba(0,0,0,.15);
+    margin-bottom: 60px;
+}
+.blocked-footer {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,.5);
+    letter-spacing: .5px;
+    text-transform: uppercase;
+}
