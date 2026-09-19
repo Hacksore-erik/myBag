@@ -10,7 +10,7 @@ var BB_VERSION = '2.8.0';
 // enabled: true  → показать экран, приложение не работает
 // enabled: false → всё работает как обычно
 var BLOCKED_CONFIG = {
-    enabled: true,
+    enabled: false,
     title: 'Уважаемая Полина Деликатная,вы заблокированы.',
     subtitle: 'Нам очень жаль, что вам не интересно наше приложение 😭',
     footer: 'myBag © 2026'
