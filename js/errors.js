@@ -1,10 +1,10 @@
 // ============================================================
 // myBag — Улучшенная система обработки ошибок
 // Файл: js/errors.js
-// Версия: 2.0.5-diag
+// Версия: 2.8.0
 // ============================================================
 
-var BB_VERSION = '2.0.5';
+var BB_ERRORS_VERSION = '2.8.0';
 var BB_ERROR_LOG_KEY = 'bybag_error_log';
 var BB_MAX_LOG = 30;
 var BB_LOAD_LOG = [];
@@ -22,45 +22,11 @@ function bbLogLoad(filename, status, extra) {
     } catch (e) {}
 }
 
-// ============ ОБРАБОТЧИК ОШИБОК ЗАГРУЗКИ СКРИПТОВ ============
-window.addEventListener('error', function(e) {
-    // Ошибка загрузки ресурса (script, img, link)
-    if (e.target && e.target.tagName === 'SCRIPT') {
-        var src = e.target.src || 'unknown';
-        bbLogLoad(src, 'FAILED TO LOAD');
-        var report = '🐛 myBag — Ошибка загрузки скрипта\n\n' +
-            'Файл: ' + src + '\n' +
-            'Время: ' + new Date().toISOString() + '\n' +
-            'URL: ' + location.href + '\n\n' +
-            'Загруженные до этого файлы:\n' +
-            BB_LOAD_LOG.map(function(l) { return '  ' + l.file + ' — ' + l.status; }).join('\n');
-        try { console.error(report); } catch (ex) {}
-        var es = document.getElementById('errorScreen');
-        var em = document.getElementById('errMsg');
-        var ec = document.getElementById('errCode');
-        var et = document.getElementById('errTitle');
-        if (es) {
-            if (ec) ec.textContent = 'Код: BB-9003 · Ошибка загрузки скрипта';
-            if (et) et.textContent = 'Не загрузился скрипт: ' + src.split('/').pop();
-            if (em) em.textContent = report;
-            es.classList.add('show');
-        }
-        return true;
-    }
-
-    // Обычная JS-ошибка
-    var msg = e.message || 'Неизвестная ошибка';
-    var stack = (e.error && e.error.stack) || '';
-    bbLogLoad('window.error', msg, stack.slice(0, 200));
-    showErrorScreen(9001, msg, e.error || { message: msg, stack: stack });
-}, true);
-
 // ============ ПРОВЕРКА ЗАГРУЗКИ ВСЕХ ФАЙЛОВ ============
 function bbCheckFiles() {
-    // Все функции, которые должны быть после загрузки всех файлов
     var expectedFunctions = {
         'errors.js': ['bbLogError', 'bbGetErrorLog', 'showErrorScreen', 'hardReset'],
-        'constants.js': ['CATEGORIES', 'DEFAULT_TYPES', 'TIPS_CATEGORIES', 'ONBOARDING_SLIDES', 'EMOJI_CHOICES'],
+        'constants.js': ['DEFAULT_TYPES', 'TIPS_CATEGORIES', 'ONBOARDING_SLIDES', 'EMOJI_CHOICES'],
         'utils.js': ['$', 'escapeHtml', 'plural', 'showToast', 'loadJSON', 'saveJSON', 'loadData', 'getCurrentTrip', 'openModal', 'closeModal'],
         'app.js': ['buildTips', 'renderHome', 'buildWidget', 'renderListsPage', 'renderTypeGrid', 'createTrip', 'renderChecklistPage', 'renderProfile', 'openChecklistPage', 'switchPage'],
         'main.js': ['init', 'bind']
@@ -79,7 +45,6 @@ function bbCheckFiles() {
                     missingInFile.push(fn);
                 }
             } catch (e) {
-                // Попробуем через eval
                 try {
                     if (typeof eval(fn) === 'undefined') missingInFile.push(fn);
                 } catch (e2) {
@@ -95,7 +60,6 @@ function bbCheckFiles() {
         }
     });
 
-    // Проверим window.byBag
     if (typeof window.byBag === 'undefined') {
         results.push('❌ utils.js — window.byBag не создан (обрыв файла!)');
         missing.push({ file: 'utils.js', missing: ['window.byBag'] });
@@ -108,7 +72,7 @@ function bbCheckFiles() {
 
 function bbShowDiagnostic() {
     var diag = bbCheckFiles();
-    var report = '🔍 ДИАГНОСТИКА myBag v' + BB_VERSION + '\n\n';
+    var report = '🔍 ДИАГНОСТИКА myBag v' + BB_ERRORS_VERSION + '\n\n';
     report += '📋 Проверка файлов:\n';
     report += diag.results.join('\n') + '\n\n';
     report += '📥 Лог загрузки:\n';
@@ -132,16 +96,25 @@ var BB_ERROR_NAMES = {
     2004:'Превышена квота localStorage', 2005:'Не удалось очистить хранилище',
     3001:'Ошибка рендера главной', 3002:'Ошибка рендера списков', 3003:'Ошибка рендера профиля',
     3004:'Ошибка рендера чеклиста', 3005:'Ошибка рендера советов', 3006:'Ошибка рендера истории поездок',
-    3007:'Ошибка открытия страницы',
+    3007:'Ошибка открытия страницы', 3008:'Ошибка рендера страницы поездки', 3009:'Ошибка рендера настроек',
     4001:'Ошибка открытия модалки', 4002:'Ошибка сохранения формы', 4003:'Ошибка закрытия модалки',
     4004:'Ошибка выбора типа поездки', 4005:'Ошибка выбора списков',
     5001:'Не удалось загрузить погоду', 5002:'Город не найден', 5003:'Погодный сервис недоступен',
     6001:'Ошибка истории поездок', 6002:'Не удалось повторить поездку', 6003:'Ошибка удаления истории',
     7001:'Ошибка отметки вещи', 7002:'Ошибка удаления вещи', 7003:'Ошибка изменения количества',
     7004:'Ошибка добавления вещи', 7005:'Ошибка поиска по списку',
-    8001:'Ошибка загрузки аватара', 8002:'Ошибка профиля', 8003:'Ошибка категории', 8004:'Ошибка достижений',
+    8001:'Ошибка загрузки аватара', 8002:'Ошибка профиля',
+    8004:'Ошибка достижений',
     9001:'Неизвестная ошибка', 9002:'Unhandled Promise Rejection', 9003:'Ошибка загрузки скрипта',
-    9004:'Запрещённая конструкция в strict mode', 9005:'Ошибка таймера', 9006:'Ошибка внешнего API'
+    9004:'Запрещённая конструкция в strict mode', 9005:'Ошибка таймера', 9006:'Ошибка внешнего API',
+    9010:'addListToTripModal отсутствует в HTML', 9011:'addListToTripPicker отсутствует в HTML',
+    9012:'Ошибка openAddListToTripModal', 9013:'Ошибка renderAddListToTripPicker',
+    9014:'Ошибка confirmAddListToTrip',
+    9020:'Ошибка клика fabItemList',
+    9021:'Ошибка экспорта данных', 9022:'Ошибка парсинга импорта', 9023:'Ошибка импорта',
+    9024:'Ошибка сохранения заметки', 9025:'Ошибка сохранения информации о поездке',
+    9026:'Ошибка рендера страницы «Поездка»', 9027:'Ошибка карусели поездок',
+    9028:'Ошибка переключения поездки', 9029:'Ошибка открытия настроек'
 };
 
 function bbGetDeviceInfo() {
@@ -167,13 +140,13 @@ function bbGetDataState() {
             modalsOpen: document.querySelectorAll('.modal-overlay.active').length,
             checklistOpen: !!(document.getElementById('checklistPage') && document.getElementById('checklistPage').classList.contains('active')),
             tipViewerOpen: !!(document.getElementById('tipViewer') && document.getElementById('tipViewer').classList.contains('active')),
-            onboardingOpen: !!(document.getElementById('onboardingViewer') && document.getElementById('onboardingViewer').classList.contains('active'))
+            onboardingOpen: !!(document.getElementById('onboardingViewer') && document.getElementById('onboardingViewer').classList.contains('active')),
+            settingsOpen: !!(document.getElementById('settingsPage') && document.getElementById('settingsPage').classList.contains('active'))
         };
         try { st.trips = JSON.parse(localStorage.getItem('bybag_active_trips') || '[]').length; } catch (e) { st.trips = '?'; }
         try { st.history = JSON.parse(localStorage.getItem('bybag_history') || '[]').length; } catch (e) { st.history = '?'; }
         try { st.customTypes = Object.keys(JSON.parse(localStorage.getItem('bybag_custom_types') || '{}')).length; } catch (e) { st.customTypes = '?'; }
         try { st.customTripTypes = Object.keys(JSON.parse(localStorage.getItem('bybag_custom_trip_types') || '{}')).length; } catch (e) { st.customTripTypes = '?'; }
-        try { st.customCats = Object.keys(JSON.parse(localStorage.getItem('bybag_custom_categories') || '{}')).length; } catch (e) { st.customCats = '?'; }
         try { st.lsTotal = (localStorage.length || 0); } catch (e) { st.lsTotal = '?'; }
         return st;
     } catch (e) { return { error: 'data state failed: ' + e.message }; }
@@ -188,7 +161,7 @@ function bbLogError(code, message, extra) {
             stack: (extra && extra.stack) ? String(extra.stack).slice(0, 2000) : '',
             device: bbGetDeviceInfo(),
             data: bbGetDataState(),
-            version: BB_VERSION,
+            version: BB_ERRORS_VERSION,
             ts: Date.now()
         };
         var log = [];
@@ -214,7 +187,7 @@ function bbClearErrorLog() {
 function bbBuildErrorReport(code, message, err) {
     var entry = bbLogError(code, message, { stack: err && err.stack });
     var lines = [];
-    lines.push('🐛 myBag v' + BB_VERSION + ' — отчёт об ошибке');
+    lines.push('🐛 myBag v' + BB_ERRORS_VERSION + ' — отчёт об ошибке');
     lines.push('');
     lines.push('Код: BB-' + code);
     lines.push('Название: ' + (BB_ERROR_NAMES[code] || '?'));
@@ -242,7 +215,6 @@ function bbBuildErrorReport(code, message, err) {
     } else {
         lines.push('  (пусто)');
     }
-    // Диагностика функций
     try {
         var diag = bbCheckFiles();
         lines.push('');
@@ -291,6 +263,8 @@ function bbDetectErrorCode(msg, stack) {
     if (stack.indexOf('renderChecklist') !== -1) return 3004;
     if (stack.indexOf('renderTips') !== -1 || stack.indexOf('buildTips') !== -1) return 3005;
     if (stack.indexOf('renderHistory') !== -1) return 3006;
+    if (stack.indexOf('renderTripPage') !== -1) return 3008;
+    if (stack.indexOf('renderSettings') !== -1) return 3009;
     if (stack.indexOf('loadWeather') !== -1 || stack.indexOf('renderWeather') !== -1) return 5001;
     if (stack.indexOf('toggleItem') !== -1) return 7001;
     if (stack.indexOf('deleteActiveItem') !== -1) return 7002;
@@ -298,15 +272,41 @@ function bbDetectErrorCode(msg, stack) {
     return 9001;
 }
 
+// ============ ГЛОБАЛЬНЫЙ ПЕРЕХВАТ ОШИБОК (единый) ============
 window.addEventListener('error', function(e) {
-    if (e.target && e.target.tagName === 'SCRIPT') return;
+    // Ошибка загрузки скрипта — особый случай
+    if (e.target && e.target.tagName === 'SCRIPT') {
+        var src = e.target.src || 'unknown';
+        bbLogLoad(src, 'FAILED TO LOAD');
+        var report = '🐛 myBag — Ошибка загрузки скрипта\n\n' +
+            'Файл: ' + src + '\n' +
+            'Время: ' + new Date().toISOString() + '\n' +
+            'URL: ' + location.href + '\n\n' +
+            'Загруженные до этого файлы:\n' +
+            BB_LOAD_LOG.map(function(l) { return '  ' + l.file + ' — ' + l.status; }).join('\n');
+        try { console.error(report); } catch (ex) {}
+        var es = document.getElementById('errorScreen');
+        var em = document.getElementById('errMsg');
+        var ec = document.getElementById('errCode');
+        var et = document.getElementById('errTitle');
+        if (es) {
+            if (ec) ec.textContent = 'Код: BB-9003 · Ошибка загрузки скрипта';
+            if (et) et.textContent = 'Не загрузился скрипт: ' + src.split('/').pop();
+            if (em) em.textContent = report;
+            es.classList.add('show');
+        }
+        return true;
+    }
+
+    // Обычная JS-ошибка
     var msg = e.message || 'Неизвестная ошибка';
     var stack = (e.error && e.error.stack) || '';
+    bbLogLoad('window.error', msg, stack.slice(0, 200));
     var code = 9001;
     if (e.target && e.target.tagName === 'IMG') code = 9003;
     else code = bbDetectErrorCode(msg, stack);
     showErrorScreen(code, msg, e.error || { message: msg, stack: stack });
-});
+}, true);
 
 window.addEventListener('unhandledrejection', function(e) {
     var reason = e.reason || {};
@@ -316,6 +316,7 @@ window.addEventListener('unhandledrejection', function(e) {
     showErrorScreen(code, msg, reason);
 });
 
+// ============ СЛУЖЕБНЫЕ ============
 function hardReset() {
     try {
         if (!confirm('Сбросить ВСЕ данные приложения? Это нельзя отменить.')) return;
@@ -341,21 +342,19 @@ function downloadErrorLog() {
     } catch (e) { alert('Не удалось скачать журнал: ' + e.message); }
 }
 
-// ============ ПОКАЗАТЬ ДИАГНОСТИКУ ============
 function bbShowDiagAlert() {
     var report = bbShowDiagnostic();
     try { console.log(report); } catch (e) {}
     alert(report);
 }
 
-// Показать диагностику через 2 секунды после загрузки
+// Автодиагностика через 2 секунды
 setTimeout(function() {
     try {
         var diag = bbCheckFiles();
         var hasProblems = diag.missing.length > 0;
         if (hasProblems) {
             bbLogLoad('DIAGNOSTIC', 'PROBLEMS FOUND', JSON.stringify(diag.missing));
-            // Показываем отчёт об ошибке с диагностикой
             var report = bbShowDiagnostic();
             var es = document.getElementById('errorScreen');
             var em = document.getElementById('errMsg');
