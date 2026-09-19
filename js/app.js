@@ -1,11 +1,12 @@
 // ============================================================
 // myBag — Логика приложения и рендер всех экранов
 // Файл: js/app.js
-// Версия: 2.5.1
+// Версия: 2.7.0
 // ============================================================
 
 // ============ УТИЛИТЫ ============
 var editingItemIdx = null;
+var editingNoteIdx = null;
 
 function attachLongPress(el, onLong, onClick) {
     var timer = null, startX = 0, startY = 0, moved = false, longFired = false;
@@ -106,12 +107,10 @@ function renderAddListToTripPicker() {
         p.innerHTML = '';
         var trip = getCurrentTrip();
         if (!trip) return;
-        // Собираем ID источников — сначала из sources, потом из items.listIds (страховка)
         var inTrip = {};
         if (trip.sources && Array.isArray(trip.sources)) {
             trip.sources.forEach(function(s) { if (s && s.id) inTrip[s.id] = true; });
         }
-        // Дополнительная проверка: у кого ещё есть вещи с этим listIds
         if (trip.items && Array.isArray(trip.items)) {
             trip.items.forEach(function(it) {
                 if (it.listIds && Array.isArray(it.listIds)) {
@@ -231,6 +230,313 @@ function confirmAddListToTrip() {
     } catch (e) {
         bbLogError(9014, 'Ошибка confirmAddListToTrip: ' + e.message, { stack: e.stack });
         showToast('Ошибка добавления: ' + e.message);
+    }
+}
+
+// ============ ЗАМЕТКИ О ПОЕЗДКЕ ============
+function renderNotesSection(container) {
+    var trip = getCurrentTrip();
+    if (!trip) return;
+    if (!trip.notes) trip.notes = [];
+
+    var sec = document.createElement('div');
+    sec.className = 'notes-section';
+
+    var header = document.createElement('div');
+    header.className = 'list-header';
+    header.innerHTML = '<span class="list-header-emoji">📝</span>' +
+                       '<span class="list-header-name">Заметки</span>' +
+                       '<span class="list-header-count">' + trip.notes.length + '</span>';
+    sec.appendChild(header);
+
+    trip.notes.forEach(function(note, i) {
+        var item = document.createElement('div');
+        item.className = 'note-item';
+        item.innerHTML = '<div class="note-icon">' + (note.emoji || '📝') + '</div>' +
+                         '<div class="note-text">' + escapeHtml(note.text) + '</div>';
+        attachLongPress(item,
+            function() { openNoteModal(i); },
+            function() { openNoteModal(i); }
+        );
+        sec.appendChild(item);
+    });
+
+    var addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'note-add-btn';
+    addBtn.innerHTML = '<span>+</span> Добавить заметку';
+    addBtn.addEventListener('click', function() { openNoteModal(null); });
+    sec.appendChild(addBtn);
+
+    container.appendChild(sec);
+}
+
+function openNoteModal(idx) {
+    editingNoteIdx = idx;
+    var trip = getCurrentTrip();
+    if (!trip) return;
+    if (!trip.notes) trip.notes = [];
+
+    var title = $('noteModalTitle');
+    var textInput = $('noteText');
+    var saveBtn = $('noteSaveBtn');
+    var delBtn = $('noteDeleteBtn');
+
+    var picker = $('noteEmojiPicker');
+    if (picker) {
+        picker.innerHTML = '';
+        var choices = ['📝','📶','🚕','🔐','🍽️','🏨','🔗','💳','📞','⭐'];
+        var current = (idx !== null && trip.notes[idx]) ? (trip.notes[idx].emoji || '📝') : '📝';
+        choices.forEach(function(em) {
+            var d = document.createElement('div');
+            d.className = 'emoji-choice' + (em === current ? ' selected' : '');
+            d.textContent = em;
+            d.dataset.emoji = em;
+            d.addEventListener('click', function() {
+                picker.querySelectorAll('.emoji-choice').forEach(function(x) { x.classList.remove('selected'); });
+                d.classList.add('selected');
+            });
+            picker.appendChild(d);
+        });
+    }
+
+    if (idx !== null && trip.notes[idx]) {
+        if (title) title.textContent = 'Править заметку';
+        if (textInput) textInput.value = trip.notes[idx].text || '';
+        if (saveBtn) saveBtn.textContent = 'Сохранить';
+        if (delBtn) delBtn.style.display = 'block';
+    } else {
+        if (title) title.textContent = 'Новая заметка';
+        if (textInput) textInput.value = '';
+        if (saveBtn) saveBtn.textContent = 'Добавить';
+        if (delBtn) delBtn.style.display = 'none';
+    }
+
+    var overlay = $('noteModal'); if (overlay) overlay.classList.add('above-checklist');
+    openModal('noteModal');
+}
+
+function saveNote() {
+    try {
+        var trip = getCurrentTrip();
+        if (!trip) return;
+        if (!trip.notes) trip.notes = [];
+
+        var textInput = $('noteText');
+        var text = (textInput ? textInput.value : '').trim();
+        if (!text) { showToast('Введите текст'); return; }
+
+        var picker = $('noteEmojiPicker');
+        var selected = picker ? picker.querySelector('.emoji-choice.selected') : null;
+        var emoji = selected ? (selected.dataset.emoji || '📝') : '📝';
+
+        if (editingNoteIdx !== null && trip.notes[editingNoteIdx]) {
+            trip.notes[editingNoteIdx].text = text;
+            trip.notes[editingNoteIdx].emoji = emoji;
+            showToast('Сохранено');
+        } else {
+            trip.notes.push({ emoji: emoji, text: text });
+            showToast('Заметка добавлена');
+        }
+
+        saveActive();
+        closeNoteModal();
+        renderChecklistPage();
+        vibrate();
+    } catch (e) {
+        bbLogError(9024, 'Ошибка сохранения заметки: ' + e.message, { stack: e.stack });
+        showToast('Ошибка сохранения');
+    }
+}
+
+function deleteNote(idx) {
+    var trip = getCurrentTrip();
+    if (!trip || !trip.notes || !trip.notes[idx]) return;
+    if (!confirm('Удалить заметку?')) return;
+    trip.notes.splice(idx, 1);
+    saveActive();
+    closeNoteModal();
+    renderChecklistPage();
+    showToast('Удалено');
+}
+
+function closeNoteModal() {
+    editingNoteIdx = null;
+    var title = $('noteModalTitle'); if (title) title.textContent = 'Новая заметка';
+    var textInput = $('noteText'); if (textInput) textInput.value = '';
+    var saveBtn = $('noteSaveBtn'); if (saveBtn) saveBtn.textContent = 'Добавить';
+    var delBtn = $('noteDeleteBtn'); if (delBtn) delBtn.style.display = 'none';
+    closeModal('noteModal');
+    var overlay = $('noteModal'); if (overlay) overlay.classList.remove('above-checklist');
+}
+
+// ============ ИНФОРМАЦИЯ О ПОЕЗДКЕ ============
+function openTripInfoModal() {
+    var trip = getCurrentTrip();
+    if (!trip) { showToast('Нет активной поездки'); return; }
+    var info = trip.info || {};
+    var fields = {
+        'infoHotelName': info.hotelName || '',
+        'infoHotelAddress': info.hotelAddress || '',
+        'infoHotelBooking': info.hotelBooking || '',
+        'infoHotelPhone': info.hotelPhone || '',
+        'infoFlightNumber': info.flightNumber || '',
+        'infoFlightFrom': info.flightFrom || '',
+        'infoFlightTo': info.flightTo || '',
+        'infoFlightTime': info.flightTime || ''
+    };
+    Object.keys(fields).forEach(function(id) {
+        var el = $(id); if (el) el.value = fields[id];
+    });
+    var overlay = $('tripInfoModal'); if (overlay) overlay.classList.add('above-checklist');
+    openModal('tripInfoModal');
+}
+
+function saveTripInfo() {
+    try {
+        var trip = getCurrentTrip();
+        if (!trip) return;
+        if (!trip.info) trip.info = {};
+
+        trip.info.hotelName = (($('infoHotelName') || {}).value || '').trim();
+        trip.info.hotelAddress = (($('infoHotelAddress') || {}).value || '').trim();
+        trip.info.hotelBooking = (($('infoHotelBooking') || {}).value || '').trim();
+        trip.info.hotelPhone = (($('infoHotelPhone') || {}).value || '').trim();
+        trip.info.flightNumber = (($('infoFlightNumber') || {}).value || '').trim();
+        trip.info.flightFrom = (($('infoFlightFrom') || {}).value || '').trim();
+        trip.info.flightTo = (($('infoFlightTo') || {}).value || '').trim();
+        trip.info.flightTime = (($('infoFlightTime') || {}).value || '').trim();
+
+        saveActive();
+        closeModal('tripInfoModal');
+        var overlay = $('tripInfoModal'); if (overlay) overlay.classList.remove('above-checklist');
+        vibrate();
+        showToast('Информация сохранена');
+        renderTripPage();
+    } catch (e) {
+        bbLogError(9025, 'Ошибка сохранения информации: ' + e.message, { stack: e.stack });
+        showToast('Ошибка сохранения');
+    }
+}
+
+// ============ СТРАНИЦА «ПОЕЗДКА» ============
+function renderTripPage() {
+    try {
+        var cont = $('tripPageContent'); if (!cont) return;
+        cont.innerHTML = '';
+
+        var trip = getCurrentTrip();
+
+        // Заглушка — нет активной поездки
+        if (!trip) {
+            var empty = document.createElement('div');
+            empty.className = 'empty-hero';
+            empty.style.marginTop = '40px';
+            empty.innerHTML = '<div class="empty-icon">✈️</div><h2>Нет активных поездок</h2><p>Создайте поездку, чтобы увидеть здесь всю информацию</p><div class="empty-cta"><span class="plus">+</span> Создать поездку</div>';
+            empty.addEventListener('click', openTypeModal);
+            cont.appendChild(empty);
+            return;
+        }
+
+        var stats = getTripStats(trip);
+        var cdText = trip.startDate ? countdown(trip.startDate) : '';
+
+        // ===== 1. Карточка поездки =====
+        var card = document.createElement('div');
+        card.className = 'main-widget';
+        card.style.setProperty('--c1', trip.c1 || '#ffb347');
+        card.style.setProperty('--c2', trip.c2 || '#ff7e5f');
+        card.innerHTML =
+            '<div class="widget-hero"><div class="bg-emoji">' + (trip.emoji || '🎒') + '</div>' +
+                '<div class="hero-top"><div class="hero-label"><span class="dot"></span>Активная поездка</div></div>' +
+                '<div class="hero-title">' +
+                    '<h2>' + escapeHtml(trip.name || 'Поездка') + '</h2>' +
+                    '<div class="hero-date">📅 ' + formatTripDate(trip) + (cdText ? '<span class="hero-countdown">' + cdText + '</span>' : '') + (trip.city ? ' · 📍 ' + escapeHtml(trip.city) : '') + '</div>' +
+                '</div></div>' +
+            '<div class="widget-body"><div class="widget-meta" style="width:100%">' +
+                '<div class="meta-row"><span class="meta-key">Собрано</span><span class="meta-val done">' + stats.done + ' / ' + stats.total + '</span></div>' +
+                '<div class="meta-row"><span class="meta-key">Прогресс</span><span class="meta-val">' + stats.percent + '%</span></div>' +
+            '</div></div>';
+        cont.appendChild(card);
+
+        // ===== 2. Погода =====
+        if (trip.city) {
+            var weatherTitle = document.createElement('div');
+            weatherTitle.className = 'stats-title';
+            weatherTitle.style.marginTop = '20px';
+            weatherTitle.textContent = 'Погода';
+            cont.appendChild(weatherTitle);
+
+            var weatherBox = document.createElement('div');
+            weatherBox.className = 'weather-card show';
+            weatherBox.id = 'tripWeatherCard';
+            weatherBox.innerHTML = '<div class="weather-head" id="tripWeatherHead"><div class="weather-icon" id="tripWeatherIcon">☀️</div><div class="weather-temp" id="tripWeatherTemp">--</div><div class="weather-info"><div class="weather-city" id="tripWeatherCity">' + escapeHtml(trip.city) + '</div><div class="weather-desc" id="tripWeatherDesc">Загрузка...</div></div><div class="weather-arrow">›</div></div><div class="weather-forecast" id="tripWeatherForecast"></div>';
+            cont.appendChild(weatherBox);
+            loadWeather();
+        }
+
+        // ===== 3. Кнопка «Открыть список вещей» =====
+        var openBtn = document.createElement('button');
+        openBtn.type = 'button';
+        openBtn.className = 'btn-primary';
+        openBtn.style.marginTop = '20px';
+        openBtn.style.marginBottom = '20px';
+        openBtn.innerHTML = '📦 Открыть список вещей';
+        openBtn.addEventListener('click', function() {
+            var i = activeTrips.indexOf(trip);
+            if (i !== -1) currentTripIndex = i;
+            openChecklistPage();
+        });
+        cont.appendChild(openBtn);
+
+        // ===== 4. Информация (бронь + рейс) =====
+        var infoTitle = document.createElement('div');
+        infoTitle.className = 'stats-title';
+        infoTitle.textContent = 'Информация';
+        cont.appendChild(infoTitle);
+
+        var info = trip.info || {};
+        var hasHotel = info.hotelName || info.hotelAddress || info.hotelBooking || info.hotelPhone;
+        var hasFlight = info.flightNumber || info.flightFrom || info.flightTo || info.flightTime;
+
+        var infoMenu = document.createElement('div');
+        infoMenu.className = 'profile-menu';
+
+        if (hasFlight) {
+            var flightItem = document.createElement('div');
+            flightItem.className = 'profile-item';
+            flightItem.style.cursor = 'default';
+            var flightRoute = [info.flightFrom, info.flightTo].filter(Boolean).join(' → ');
+            flightItem.innerHTML = '<div class="pi-icon">✈️</div><div class="pi-label">Рейс ' + escapeHtml(info.flightNumber || '') + (flightRoute ? ' · ' + escapeHtml(flightRoute) : '') + (info.flightTime ? ' · ' + escapeHtml(info.flightTime) : '') + '</div>';
+            infoMenu.appendChild(flightItem);
+        }
+
+        if (hasHotel) {
+            var hotelItem = document.createElement('div');
+            hotelItem.className = 'profile-item';
+            hotelItem.style.cursor = 'default';
+            hotelItem.innerHTML = '<div class="pi-icon">🏨</div><div class="pi-label">' + escapeHtml(info.hotelName || 'Отель') + (info.hotelBooking ? ' · ' + escapeHtml(info.hotelBooking) : '') + '</div>';
+            infoMenu.appendChild(hotelItem);
+        }
+
+        var editInfoItem = document.createElement('div');
+        editInfoItem.className = 'profile-item';
+        editInfoItem.innerHTML = '<div class="pi-icon">✏️</div><div class="pi-label">' + (hasHotel || hasFlight ? 'Изменить информацию' : 'Добавить информацию') + '</div><div class="pi-arrow">›</div>';
+        editInfoItem.addEventListener('click', openTripInfoModal);
+        infoMenu.appendChild(editInfoItem);
+
+        cont.appendChild(infoMenu);
+
+        // ===== 5. Заметки =====
+        var notesTitle = document.createElement('div');
+        notesTitle.className = 'stats-title';
+        notesTitle.style.marginTop = '20px';
+        notesTitle.textContent = 'Заметки';
+        cont.appendChild(notesTitle);
+
+        renderNotesSection(cont);
+    } catch (e) {
+        bbLogError(9026, 'Ошибка рендера страницы «Поездка»: ' + e.message, { stack: e.stack });
     }
 }
 
@@ -823,7 +1129,9 @@ function createTrip() {
         startDate: startDate, endDate: endDate, daysCount: daysCount,
         city: (($('tripCity') || {}).value || '').trim(),
         items: combined.items,
-        sources: combined.sources
+        sources: combined.sources,
+        notes: [],
+        info: {}
     });
     currentTripIndex = activeTrips.length - 1;
     saveActive();
@@ -1191,7 +1499,7 @@ function completeActiveTrip() {
     });
     activeTrips.splice(currentTripIndex, 1);
     if (currentTripIndex >= activeTrips.length) currentTripIndex = Math.max(0, activeTrips.length - 1);
-    saveActive(); saveHistory(); renderHome(); renderProfile();
+    saveActive(); saveHistory(); renderHome(); renderProfile(); renderTripPage();
 }
 function deleteHistory(id) {
     tripHistory = tripHistory.filter(function(h) { return h.id !== id; });
@@ -1245,6 +1553,9 @@ function renderChecklistPage() {
         var cont = $('checklistContainer'); if (!cont) return;
         cont.innerHTML = '';
         var q = searchQuery.toLowerCase().trim();
+
+        // Заметки о поездке — сверху, до вещей
+        if (!q) renderNotesSection(cont);
 
         var vis = [];
         trip.items.forEach(function(it, i) {
@@ -1344,7 +1655,6 @@ function buildSwipeItem(item, idx) {
     la.className = 'check-item-actions left';
     la.innerHTML = '<span>Удалить</span><span>🗑</span>';
 
-    // Скрываем обе плашки по умолчанию — покажем только нужную при свайпе
     ra.style.opacity = '0';
     la.style.opacity = '0';
     ra.style.transition = 'opacity .1s ease';
@@ -1375,7 +1685,6 @@ function buildSwipeItem(item, idx) {
         if (dx > SWIPE_ITEM_THRESHOLD * 1.5) dx = SWIPE_ITEM_THRESHOLD * 1.5;
         if (dx < -SWIPE_ITEM_THRESHOLD * 1.5) dx = -SWIPE_ITEM_THRESHOLD * 1.5;
         el.style.transform = 'translateX(' + dx + 'px)';
-        // Показываем только нужную плашку
         if (dx > 8) { ra.style.opacity = '1'; la.style.opacity = '0'; }
         else if (dx < -8) { ra.style.opacity = '0'; la.style.opacity = '1'; }
         else { ra.style.opacity = '0'; la.style.opacity = '0'; }
@@ -1394,10 +1703,8 @@ function buildSwipeItem(item, idx) {
         }
         else if (cx < -SWIPE_ITEM_THRESHOLD) {
             el.style.transform = 'translateX(-100%)';
-            // Сразу убираем зелёную плашку (не должна светиться при удалении)
             ra.style.opacity = '0';
             setTimeout(function() {
-                // Прячем красную и убираем родителя — чтобы фон не мелькал
                 la.style.opacity = '0';
                 wrap.style.background = 'transparent';
                 deleteActiveItem(idx);
@@ -1411,7 +1718,6 @@ function buildSwipeItem(item, idx) {
         cx = 0;
     }, { passive: true });
 
-    // Мгновенный сброс при отмене
     el.addEventListener('touchcancel', function() {
         sw = false;
         el.style.transform = 'translateX(0)';
@@ -1544,18 +1850,16 @@ function showListHeaderMenu(listId) {
 
 // ============ ПОГОДА ============
 function loadWeather() {
-    var card = $('weatherCard'); if (!card) return;
     var trip = getCurrentTrip();
-    if (!trip || !trip.city) { card.classList.remove('show'); return; }
+    if (!trip || !trip.city) {
+        var card = $('weatherCard'); if (card) card.classList.remove('show');
+        var tripCard = $('tripWeatherCard'); if (tripCard) tripCard.style.display = 'none';
+        return;
+    }
     var ck = 'weather_' + trip.city.toLowerCase();
     var cached = weatherCache[ck];
     if (cached && Date.now() - cached.ts < WEATHER_CACHE_TTL) { renderWeather(cached.data); return; }
-    card.classList.add('show');
-    var ce = $('weatherCity'); if (ce) ce.textContent = trip.city;
-    var de = $('weatherDesc'); if (de) de.textContent = 'Загрузка...';
-    var ie = $('weatherIcon'); if (ie) ie.textContent = '🌍';
-    var te = $('weatherTemp'); if (te) te.textContent = '--';
-    var fe = $('weatherForecast'); if (fe) fe.innerHTML = '';
+
     fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(trip.city) + '&count=1&language=ru&format=json')
         .then(function(r) { return r.json(); })
         .then(function(g) {
@@ -1567,25 +1871,13 @@ function loadWeather() {
         })
         .catch(function(e) {
             bbLogError(5001, 'Не удалось загрузить погоду', { stack: e.stack });
-            var de = $('weatherDesc'); if (de) de.textContent = 'Не удалось загрузить погоду';
-            var ie = $('weatherIcon'); if (ie) ie.textContent = '❓';
         });
 }
-function renderWeather(data) {
-    var card = $('weatherCard'); if (!card) return;
-    card.classList.add('show');
 
+function renderWeather(data) {
     var cur = data.current || {}, code = cur.weather_code || 0;
     var w = WEATHER_CODES[code] || { icon: '🌡️', desc: 'Погода' };
-
-    // Иконка погоды — крупная
-    var ie = $('weatherIcon'); if (ie) ie.textContent = w.icon;
-
-    // Температура
-    var te = $('weatherTemp'); if (te) te.textContent = Math.round(cur.temperature_2m) + '°';
-
-    // Город
-    var ce = $('weatherCity'); if (ce) ce.textContent = data._cityName || (getCurrentTrip() || {}).city || '';
+    var trip = getCurrentTrip() || {};
 
     // Описание с советом
     var hint = w.desc;
@@ -1597,14 +1889,31 @@ function renderWeather(data) {
     }
     if (code >= 51 && code <= 82) hint += ' · Не забудь зонт ☔';
     if (code >= 71 && code <= 75) hint += ' · Снег ❄️';
-    var de = $('weatherDesc'); if (de) de.textContent = hint;
 
     // Прогноз на 5 дней
-    var fe = $('weatherForecast'); if (!fe) return;
-    fe.innerHTML = '';
     var daily = data.daily || {};
     var days = daily.time || [], codes = daily.weather_code || [], mx = daily.temperature_2m_max || [], mn = daily.temperature_2m_min || [];
     var dn = ['вс','пн','вт','ср','чт','пт','сб'];
+
+    // Рендер в обе карточки
+    renderWeatherToCard('weatherCard', 'weatherIcon', 'weatherTemp', 'weatherCity', 'weatherDesc', 'weatherForecast', data, w, hint, trip, days, codes, mx, mn, dn);
+    renderWeatherToCard('tripWeatherCard', 'tripWeatherIcon', 'tripWeatherTemp', 'tripWeatherCity', 'tripWeatherDesc', 'tripWeatherForecast', data, w, hint, trip, days, codes, mx, mn, dn);
+}
+
+function renderWeatherToCard(cardId, iconId, tempId, cityId, descId, forecastId, data, w, hint, trip, days, codes, mx, mn, dn) {
+    var card = $(cardId); if (!card) return;
+    card.classList.add('show');
+    if (cardId === 'tripWeatherCard') card.style.display = '';
+
+    var cur = data.current || {};
+
+    var ie = $(iconId); if (ie) ie.textContent = w.icon;
+    var te = $(tempId); if (te) te.textContent = Math.round(cur.temperature_2m) + '°';
+    var ce = $(cityId); if (ce) ce.textContent = data._cityName || trip.city || '';
+    var de = $(descId); if (de) de.textContent = hint;
+
+    var fe = $(forecastId); if (!fe) return;
+    fe.innerHTML = '';
     for (var i = 0; i < Math.min(5, days.length); i++) {
         var d = new Date(days[i]);
         var ww = WEATHER_CODES[codes[i]] || { icon: '🌡️' };
@@ -1617,19 +1926,14 @@ function renderWeather(data) {
         fe.appendChild(dayEl);
     }
 
-    // Убираем expanded при новом рендере (сбрасываем свёрнутое)
-    card.classList.remove('expanded');
-    // Подключаем/переподключаем обработчик тапа
-    attachWeatherTap();
+    // Тап для раскрытия прогноза
+    attachWeatherTapToCard(cardId);
 }
 
-function attachWeatherTap() {
-    var card = $('weatherCard'); if (!card) return;
-    var head = card.querySelector('.weather-head');
-    if (!head) return;
-    // Убираем старый обработчик если был
+function attachWeatherTapToCard(cardId) {
+    var card = $(cardId); if (!card) return;
+    var head = card.querySelector('.weather-head'); if (!head) return;
     if (card._weatherHandler) head.removeEventListener('click', card._weatherHandler);
-    // Создаём новый
     card._weatherHandler = function() {
         card.classList.toggle('expanded');
         vibrate();
@@ -1748,7 +2052,6 @@ function renderProfile() {
             if (profile.avatar) { av.style.backgroundImage = 'url(' + profile.avatar + ')'; av.classList.add('has-photo'); lt.textContent = ''; }
             else { av.style.backgroundImage = ''; av.classList.remove('has-photo'); lt.textContent = (profile.name || 'Э').charAt(0).toUpperCase(); }
         }
-        // Аватар в нижнем меню — синхронизация
         var navAv = $('navAvatar'), navLt = $('navAvatarLetter');
         if (navAv && navLt) {
             if (profile.avatar) {
@@ -1925,6 +2228,7 @@ function renderCatList() {
         cont.appendChild(item);
     });
 }
+
 // ============ ЭКСПОРТ / ИМПОРТ ============
 function exportData() {
     try {
@@ -2015,7 +2319,6 @@ function importData(file) {
 }
 
 // ============ ЖУРНАЛ ОШИБОК ============
-// ============ ЖУРНАЛ ОШИБОК ============
 function openErrorLog() {
     var cont = $('errorLogContainer'); if (!cont) return;
     cont.innerHTML = '';
@@ -2095,6 +2398,7 @@ function switchPage(page) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (page === 'profile') renderProfile();
     if (page === 'lists') renderListsPage();
+    if (page === 'trip') renderTripPage();
 }
 
 // ============ НАПОМИНАНИЯ ============
