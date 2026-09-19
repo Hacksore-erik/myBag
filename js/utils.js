@@ -1,13 +1,12 @@
 // ============================================================
 // myBag — Утилиты, storage, состояние, шина window.byBag
 // Файл: js/utils.js
-// Версия: 2.5.1
+// Версия: 2.8.0
 // ============================================================
 
 // ============ СОСТОЯНИЕ ============
 var customTypes = {};
 var customTripTypes = {};
-var customCategories = {};
 var activeTrips = [], tripHistory = [];
 var currentTripIndex = 0, selectedType = null, selectedListIds = [];
 var profile = { name: 'Твое имя', avatar: null };
@@ -18,9 +17,8 @@ var twiz = { name: '', emoji: '🏖️', colorIdx: 0, items: [] };
 var editing = { id: null, name: '', emoji: '👕', colorIdx: 0, items: [] };
 var advTarget = 'wizard';
 var searchQuery = '', weatherCache = {}, searchDebounceTimer = null, currentOnbSlide = 0;
-var currentTipIdx = 0, pendingCategoryTarget = null, categoryParent = null;
+var currentTipIdx = 0;
 var tipsMode = 'cat';
-var allCategoriesCache = null;
 
 // ============ УТИЛИТЫ ============
 function $(id) { try { return document.getElementById(id); } catch (e) { return null; } }
@@ -39,27 +37,14 @@ function plural(n, one, few, many) {
 
 function getType(id) { return DEFAULT_TYPES[id] || customTripTypes[id] || null; }
 
-function getAllCategories() {
-    if (allCategoriesCache) return allCategoriesCache;
-    var all = {};
-    Object.keys(CATEGORIES).forEach(function(k) { all[k] = CATEGORIES[k]; });
-    Object.keys(customCategories).forEach(function(k) { all[k] = customCategories[k]; });
-    allCategoriesCache = all;
-    return all;
-}
-
-function invalidateCategoriesCache() { allCategoriesCache = null; }
-
 function normalizeItem(i) {
-    if (!i) return { text: 'Без названия', qty: 1, note: '', category: 'other', from: '' };
-    if (typeof i === 'string') return { text: i, qty: 1, note: '', category: 'other', from: '' };
-    if (typeof i !== 'object') return { text: String(i), qty: 1, note: '', category: 'other', from: '' };
-    var allCats = getAllCategories();
+    if (!i) return { text: 'Без названия', qty: 1, note: '', from: '' };
+    if (typeof i === 'string') return { text: i, qty: 1, note: '', from: '' };
+    if (typeof i !== 'object') return { text: String(i), qty: 1, note: '', from: '' };
     return {
         text: typeof i.text === 'string' ? i.text : String(i.text || 'Без названия'),
         qty: typeof i.qty === 'number' && i.qty > 0 ? i.qty : 1,
         note: typeof i.note === 'string' ? i.note : '',
-        category: allCats[i.category] ? i.category : 'other',
         from: typeof i.from === 'string' ? i.from : ''
     };
 }
@@ -95,7 +80,7 @@ function resetUIBlocks() {
     try { document.body.style.overflow = ''; document.body.style.position = ''; document.body.style.top = ''; document.body.style.width = ''; } catch (e) {}
 }
 
-// ⚠️ ИЗМЕНЕНО: НЕ снимаем above-checklist — это ломало открытие модалок после возврата на главную
+// НЕ снимаем above-checklist — это ломало открытие модалок после возврата на главную
 function closeAllModals() {
     try { document.querySelectorAll('.modal-overlay').forEach(function(m) { m.classList.remove('active'); m.classList.remove('on-top2'); }); } catch (e) {}
 }
@@ -132,7 +117,6 @@ function loadData() {
     tripHistory = loadJSON('bybag_history', []);
     customTypes = loadJSON('bybag_custom_types', {});
     customTripTypes = loadJSON('bybag_custom_trip_types', {});
-    customCategories = loadJSON('bybag_custom_categories', {});
     profile = loadJSON('bybag_profile', { name: 'Твое имя', avatar: null });
     settings = loadJSON('bybag_settings', { dark: false, notif: true, vibrate: true, hideDone: false });
     achievementsState = loadJSON('bybag_achievements', {});
@@ -140,21 +124,34 @@ function loadData() {
     var viewedVersion = loadJSON(VIEWED_WHATS_NEW_KEY, '');
     viewedWhatsNew = (viewedVersion === BB_VERSION);
 
+    // Загружаем сохранённый currentTripIndex
+    var savedIdx = loadJSON('bybag_current_trip_index', 0);
+    currentTripIndex = (typeof savedIdx === 'number' && savedIdx >= 0) ? savedIdx : 0;
+
+    // Удаляем ключ категорий (фича убрана в v2.8.0)
+    try { localStorage.removeItem('bybag_custom_categories'); } catch (e) {}
     try { localStorage.removeItem('bybag_viewed_whats_new'); } catch (e) {}
 
     if (!Array.isArray(tripHistory)) tripHistory = [];
     if (typeof customTypes !== 'object' || customTypes === null || Array.isArray(customTypes)) customTypes = {};
     if (typeof customTripTypes !== 'object' || customTripTypes === null || Array.isArray(customTripTypes)) customTripTypes = {};
-    if (typeof customCategories !== 'object' || customCategories === null || Array.isArray(customCategories)) customCategories = {};
     if (typeof profile !== 'object' || profile === null) profile = { name: 'Твое имя', avatar: null };
     if (typeof settings !== 'object' || settings === null) settings = { dark: false, notif: true, vibrate: true, hideDone: false };
     if (typeof achievementsState !== 'object' || achievementsState === null) achievementsState = {};
     if (typeof viewedTips !== 'object' || viewedTips === null) viewedTips = {};
 
+    // Миграция: убираем поле category у всех вещей (фича убрана)
+    function stripCategory(item) {
+        if (item && typeof item === 'object' && item.category !== undefined) {
+            delete item.category;
+        }
+        return item;
+    }
+
     activeTrips = activeTrips.filter(function(t) { return t && typeof t === 'object'; });
     activeTrips.forEach(function(t) {
         if (!Array.isArray(t.items)) t.items = [];
-        t.items = t.items.map(normalizeItem);
+        t.items = t.items.map(function(i) { return stripCategory(normalizeItem(i)); });
         if (!t.daysCount) t.daysCount = 3;
     });
     if (activeTrips.length > MAX_ACTIVE_TRIPS) activeTrips = activeTrips.slice(0, MAX_ACTIVE_TRIPS);
@@ -164,7 +161,7 @@ function loadData() {
         var t = customTypes[k];
         if (!t || typeof t !== 'object') { delete customTypes[k]; return; }
         if (!Array.isArray(t.items)) t.items = [];
-        t.items = t.items.map(normalizeItem);
+        t.items = t.items.map(function(i) { return stripCategory(normalizeItem(i)); });
         t.name = t.name || 'Свой список';
         t.emoji = t.emoji || '👕';
         t.c1 = t.c1 || LIST_COLOR_PALETTES[0].c1;
@@ -177,7 +174,7 @@ function loadData() {
         var t = customTripTypes[k];
         if (!t || typeof t !== 'object') { delete customTripTypes[k]; return; }
         if (!Array.isArray(t.items)) t.items = [];
-        t.items = t.items.map(normalizeItem);
+        t.items = t.items.map(function(i) { return stripCategory(normalizeItem(i)); });
         t.name = t.name || 'Свой тип';
         t.emoji = t.emoji || '🏖️';
         t.c1 = t.c1 || '#ffb347';
@@ -185,15 +182,12 @@ function loadData() {
         t.ring = t.ring || '#ff7e5f';
     });
 
-    Object.keys(customCategories).forEach(function(k) {
-        var c = customCategories[k];
-        if (!c || typeof c !== 'object' || !c.name) { delete customCategories[k]; return; }
-        c.icon = c.icon || '📦';
-    });
-    invalidateCategoriesCache();
-
     tripHistory = tripHistory.filter(function(h) { return h && typeof h === 'object'; });
-    tripHistory.forEach(function(h) { if (h.fullItems && Array.isArray(h.fullItems)) h.fullItems = h.fullItems.map(normalizeItem); });
+    tripHistory.forEach(function(h) {
+        if (h.fullItems && Array.isArray(h.fullItems)) {
+            h.fullItems = h.fullItems.map(function(i) { return stripCategory(normalizeItem(i)); });
+        }
+    });
 }
 
 function saveActive() {
@@ -204,16 +198,29 @@ function saveHistory() { saveJSON('bybag_history', tripHistory); }
 function saveProfile() { saveJSON('bybag_profile', profile); }
 function saveCustomTypes() { saveJSON('bybag_custom_types', customTypes); }
 function saveCustomTripTypes() { saveJSON('bybag_custom_trip_types', customTripTypes); }
-function saveCustomCategories() { saveJSON('bybag_custom_categories', customCategories); invalidateCategoriesCache(); }
 function saveSettings() { saveJSON('bybag_settings', settings); }
 function saveAchievements() { saveJSON('bybag_achievements', achievementsState); }
 function saveViewedTips() { saveJSON('bybag_viewed_tips', viewedTips); }
 function saveViewedWhatsNew() { saveJSON(VIEWED_WHATS_NEW_KEY, BB_VERSION); viewedWhatsNew = true; }
+function saveCurrentTripIndex() { saveJSON('bybag_current_trip_index', currentTripIndex); }
 
 // ============ ДАТЫ, ВРЕМЯ, СТАТИСТИКА ============
 function formatTripDate(trip) {
+    if (!trip) return '';
     if (!trip.startDate) return trip.date || '';
-    try { return new Date(trip.startDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }); } catch (e) { return trip.date || ''; }
+    try {
+        var start = new Date(trip.startDate);
+        if (!trip.endDate) {
+            return start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+        }
+        var end = new Date(trip.endDate);
+        // Если месяц совпадает: "12–17 июля"
+        if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+            return start.getDate() + '–' + end.getDate() + ' ' + start.toLocaleDateString('ru-RU', { month: 'long' });
+        }
+        // Разные месяцы: "28 июля – 3 августа"
+        return start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) + ' – ' + end.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+    } catch (e) { return trip.date || ''; }
 }
 
 function countdown(startDate) {
@@ -276,7 +283,6 @@ window.byBag = {
     resetUIBlocks: resetUIBlocks,
     closeAllModals: closeAllModals,
     getType: getType,
-    getAllCategories: getAllCategories,
     normalizeItem: normalizeItem,
     getCurrentTrip: getCurrentTrip,
     getTripStats: getTripStats,
@@ -289,16 +295,15 @@ window.byBag = {
     saveProfile: saveProfile,
     saveCustomTypes: saveCustomTypes,
     saveCustomTripTypes: saveCustomTripTypes,
-    saveCustomCategories: saveCustomCategories,
     saveSettings: saveSettings,
     saveAchievements: saveAchievements,
     saveViewedTips: saveViewedTips,
     saveViewedWhatsNew: saveViewedWhatsNew,
+    saveCurrentTripIndex: saveCurrentTripIndex,
     getActiveTrips: function() { return activeTrips; },
     getHistory: function() { return tripHistory; },
     getCustomTypes: function() { return customTypes; },
     getCustomTripTypes: function() { return customTripTypes; },
-    getCustomCategories: function() { return customCategories; },
     getProfile: function() { return profile; },
     getSettings: function() { return settings; }
 };
