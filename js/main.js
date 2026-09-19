@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Инициализация, обработчики кнопок, запуск приложения
 // Файл: js/main.js
-// Версия: 2.6.0
+// Версия: 2.7.0
 // ============================================================
 
 function bind(id, ev, fn) { var el = $(id); if (el) { try { el.addEventListener(ev, fn); } catch (e) {} } }
@@ -15,15 +15,21 @@ function init() {
         document.querySelectorAll('[data-close]').forEach(function(b) {
             b.addEventListener('click', function() {
                 var id = b.getAttribute('data-close');
-                if (id === 'addItemModal') closeAddItemModal(); else closeModal(id);
+                if (id === 'addItemModal') closeAddItemModal();
+                else if (id === 'noteModal') closeNoteModal();
+                else closeModal(id);
             });
         });
 
         // Закрытие модалок по клику на фон
-        ['typeModal','editProfileModal','listEditorModal','addItemModal','wizardStep1','wizardStep2','tripWizardStep1','tripWizardStep2','advancedItemModal','advancedItemModal2','manageCategoriesModal','errorLogModal','addListToTripModal'].forEach(function(id) {
+        ['typeModal','editProfileModal','listEditorModal','addItemModal','wizardStep1','wizardStep2','tripWizardStep1','tripWizardStep2','advancedItemModal','advancedItemModal2','manageCategoriesModal','errorLogModal','addListToTripModal','tripInfoModal','noteModal'].forEach(function(id) {
             var el = $(id);
             if (el) el.addEventListener('click', function(e) {
-                if (e.target === this) { if (id === 'addItemModal') closeAddItemModal(); else closeModal(id); }
+                if (e.target === this) {
+                    if (id === 'addItemModal') closeAddItemModal();
+                    else if (id === 'noteModal') closeNoteModal();
+                    else closeModal(id);
+                }
             });
         });
 
@@ -125,6 +131,27 @@ function init() {
         bind('avatarInput', 'change', handleAvatarUpload);
         bind('editAvatar', 'click', function() { var a = $('avatarInput'); if (a) a.click(); });
         bind('resetAvatarBtn', 'click', resetAvatar);
+
+        // Заметки о поездке
+        bind('noteSaveBtn', 'click', function() {
+            try {
+                if (typeof saveNote === 'function') saveNote();
+                else showToast('Ошибка: saveNote не найдена');
+            } catch (e) { showToast('Ошибка: ' + e.message); }
+        });
+        bind('noteDeleteBtn', 'click', function() {
+            try {
+                if (editingNoteIdx !== null && typeof deleteNote === 'function') deleteNote(editingNoteIdx);
+            } catch (e) { showToast('Ошибка: ' + e.message); }
+        });
+
+        // Информация о поездке (брони + рейс)
+        bind('saveTripInfoBtn', 'click', function() {
+            try {
+                if (typeof saveTripInfo === 'function') saveTripInfo();
+                else showToast('Ошибка: saveTripInfo не найдена');
+            } catch (e) { showToast('Ошибка: ' + e.message); }
+        });
 
         // Экспорт / импорт данных
         bind('exportDataBtn', 'click', function() {
@@ -242,6 +269,7 @@ function init() {
         renderHome();
         renderProfile();
         renderListsPage();
+        renderTripPage();
 
         // Онбординг и уведомления
         if (!localStorage.getItem('bybag_onboarding_done')) setTimeout(showOnboarding, 800);
