@@ -190,19 +190,27 @@ body.dark .search-highlight{background:rgba(255,210,90,.4);color:#fff}
 .progress-bar{height:8px;background:var(--border-soft);border-radius:10px;overflow:hidden}
 .progress-fill{height:100%;border-radius:10px;transition:width .5s cubic-bezier(.4,0,.2,1);background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
 .progress-fill.complete{background:linear-gradient(90deg,#4ecb71,#38b2ac)}
-.weather-card{margin-bottom:12px;padding:11px 13px;background:linear-gradient(135deg,rgba(94,199,255,.15),rgba(58,134,255,.15));border:1.2px solid rgba(94,199,255,.3);border-radius:13px;display:none}
+/* WEATHER — компактная строка с раскрытием */
+.weather-card{margin-bottom:12px;padding:0;background:var(--card);border:1.5px solid var(--border-soft);border-radius:16px;display:none;overflow:hidden;transition:border-color .2s ease}
 .weather-card.show{display:block}
-.weather-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.weather-header .w-icon{font-size:21px}
-.weather-header .w-city{flex:1;font-size:11.5px;font-weight:700;color:var(--text)}
-.weather-header .w-temp{font-size:18px;font-weight:800;color:var(--text)}
-.weather-desc{font-size:9.5px;color:var(--text-2);font-weight:600;margin-bottom:3px}
-.weather-forecast{display:flex;gap:8px;overflow-x:auto;margin-top:6px;padding-bottom:3px;scrollbar-width:none}
-.weather-forecast::-webkit-scrollbar{display:none}
-.forecast-day{flex-shrink:0;text-align:center;padding:6px 8px;background:var(--card);border-radius:9px;min-width:48px}
-.forecast-day .fd-name{font-size:8px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:3px}
-.forecast-day .fd-icon{font-size:16px;margin-bottom:3px}
-.forecast-day .fd-temp{font-size:9.5px;font-weight:700;color:var(--text)}
+.weather-card:active{border-color:var(--border)}
+.weather-head{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;transition:background .15s ease;-webkit-tap-highlight-color:transparent}
+.weather-head:active{background:var(--card-solid)}
+.weather-icon{font-size:32px;line-height:1;flex-shrink:0;width:40px;text-align:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,.1))}
+.weather-temp{font-size:24px;font-weight:800;color:var(--text);line-height:1;flex-shrink:0;letter-spacing:-.5px;min-width:56px}
+.weather-info{flex:1;min-width:0}
+.weather-city{font-size:14px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.weather-desc{font-size:12px;color:var(--text-3);font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.weather-arrow{font-size:16px;color:var(--text-3);flex-shrink:0;transition:transform .25s cubic-bezier(.4,0,.2,1);line-height:1}
+.weather-card.expanded .weather-arrow{transform:rotate(180deg)}
+.weather-forecast{display:none;padding:0 14px 14px;border-top:1px solid var(--border-soft);margin-top:0}
+.weather-card.expanded .weather-forecast{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding-top:12px}
+.forecast-day{text-align:center;padding:8px 4px;background:var(--card-solid);border-radius:10px;border:1px solid var(--border-soft)}
+.forecast-day .fd-name{font-size:9.5px;font-weight:800;color:var(--text-3);text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px}
+.forecast-day .fd-icon{font-size:20px;margin-bottom:6px;line-height:1}
+.forecast-day .fd-temps{font-size:11px;font-weight:800;color:var(--text);line-height:1.3}
+.forecast-day .fd-temps .fd-max{color:var(--text)}
+.forecast-day .fd-temps .fd-min{color:var(--text-3);font-weight:600}
 /* Фикс — модалка категории поверх других */
 .modal-overlay.on-top2{z-index:9999!important}
 
