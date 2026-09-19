@@ -5,6 +5,17 @@
 // ============================================================
 
 var BB_VERSION = '2.8.0';
+
+// ============ ЭКРАН-ЗАГЛУШКА ============
+// enabled: true  → показать экран, приложение не работает
+// enabled: false → всё работает как обычно
+var BLOCKED_CONFIG = {
+    enabled: true,
+    title: 'Уважаемая Полина Деликатная,\nвы заблокированы.',
+    subtitle: 'Нам очень жаль, что вам не интересно наше приложение 😭',
+    footer: 'myBag © 2026'
+};
+
 var MAX_ACTIVE_TRIPS = 3;
 var SWIPE_THRESHOLD = 0.2;
 var SWIPE_ITEM_THRESHOLD = 70;
