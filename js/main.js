@@ -1,7 +1,7 @@
 // ============================================================
 // myBag — Инициализация, обработчики кнопок, запуск приложения
 // Файл: js/main.js
-// Версия: 2.7.0
+// Версия: 2.8.0
 // ============================================================
 
 function bind(id, ev, fn) { var el = $(id); if (el) { try { el.addEventListener(ev, fn); } catch (e) {} } }
@@ -22,7 +22,7 @@ function init() {
         });
 
         // Закрытие модалок по клику на фон
-        ['typeModal','editProfileModal','listEditorModal','addItemModal','wizardStep1','wizardStep2','tripWizardStep1','tripWizardStep2','advancedItemModal','advancedItemModal2','manageCategoriesModal','errorLogModal','addListToTripModal','tripInfoModal','noteModal'].forEach(function(id) {
+        ['typeModal','editProfileModal','listEditorModal','addItemModal','wizardStep1','wizardStep2','tripWizardStep1','tripWizardStep2','advancedItemModal','advancedItemModal2','errorLogModal','addListToTripModal','tripInfoModal','noteModal'].forEach(function(id) {
             var el = $(id);
             if (el) el.addEventListener('click', function(e) {
                 if (e.target === this) {
@@ -32,11 +32,6 @@ function init() {
                 }
             });
         });
-
-        // Category modal — отдельная логика возврата родителя
-        var catOverlay = $('categoryModal');
-        if (catOverlay) catOverlay.addEventListener('click', function(e) { if (e.target === this) cancelCategoryCreation(); });
-        bind('categoryCloseBtn', 'click', cancelCategoryCreation);
 
         // Нижняя навигация
         document.querySelectorAll('.nav-item').forEach(function(n) {
@@ -112,7 +107,7 @@ function init() {
         bind('twiz2SaveBtn', 'click', twiz2Save);
         bind('twiz2BackBtn', 'click', function() { closeModal('tripWizardStep2'); openModal('tripWizardStep1'); });
 
-        // Advanced Item (добавить вещь подробно)
+        // Advanced Item
         bind('advConfirmBtn', 'click', advConfirm);
         bind('adv2ConfirmBtn', 'click', adv2Confirm);
 
@@ -132,6 +127,24 @@ function init() {
         bind('editAvatar', 'click', function() { var a = $('avatarInput'); if (a) a.click(); });
         bind('resetAvatarBtn', 'click', resetAvatar);
 
+        // Шестерёнка → настройки
+        bind('profileSettingsBtn', 'click', function() {
+            try {
+                if (typeof openSettingsPage === 'function') openSettingsPage();
+                else showToast('Ошибка: openSettingsPage не найдена');
+            } catch (e) { showToast('Ошибка: ' + e.message); }
+        });
+        bind('settingsBackBtn', 'click', function() {
+            try {
+                if (typeof closeSettingsPage === 'function') closeSettingsPage();
+            } catch (e) {}
+        });
+        bind('settingsEditProfileBtn', 'click', function() {
+            try {
+                if (typeof openEditProfile === 'function') openEditProfile();
+            } catch (e) {}
+        });
+
         // Заметки о поездке
         bind('noteSaveBtn', 'click', function() {
             try {
@@ -145,7 +158,7 @@ function init() {
             } catch (e) { showToast('Ошибка: ' + e.message); }
         });
 
-        // Информация о поездке (брони + рейс)
+        // Информация о поездке
         bind('saveTripInfoBtn', 'click', function() {
             try {
                 if (typeof saveTripInfo === 'function') saveTripInfo();
@@ -153,7 +166,7 @@ function init() {
             } catch (e) { showToast('Ошибка: ' + e.message); }
         });
 
-        // Экспорт / импорт данных
+        // Экспорт / импорт
         bind('exportDataBtn', 'click', function() {
             try {
                 if (typeof exportData === 'function') exportData();
@@ -175,7 +188,7 @@ function init() {
             }
         });
 
-        // Настройки
+        // Настройки (тоглы)
         bind('darkModeToggleItem', 'click', function() { settings.dark = !settings.dark; saveSettings(); applyTheme(); });
         bind('notifToggleItem', 'click', function() {
             settings.notif = !settings.notif; saveSettings(); applyTheme();
@@ -191,17 +204,12 @@ function init() {
             if (!localStorage.getItem('bybag_notif_asked')) setTimeout(showNotifOnboarding, 600);
         });
 
-        // TipViewer (советы / что нового)
+        // TipViewer
         bind('tipViewerClose', 'click', closeTipViewer);
 
-        // Уведомления onboarding
+        // Уведомления
         bind('notifAllowBtn', 'click', handleNotifAllow);
         bind('notifLaterBtn', 'click', handleNotifLater);
-
-        // Категории
-        bind('manageCategoriesBtn', 'click', openManageCategories);
-        bind('addNewCatFromList', 'click', function() { openCategoryModal(null, 'manageCategoriesModal'); });
-        bind('saveCatBtn', 'click', saveNewCategory);
 
         // Журнал ошибок
         bind('viewErrorLogBtn', 'click', function() { openErrorLog(); openModal('errorLogModal'); });
@@ -210,22 +218,7 @@ function init() {
             if (confirm('Очистить журнал ошибок?')) { bbClearErrorLog(); openErrorLog(); renderProfile(); }
         });
 
-        // Категории в модалках — change обрабатывается глобально
-        ['advCat','adv2Cat'].forEach(function(selId) {
-            var sel = $(selId);
-            if (sel) sel.addEventListener('change', function() {
-                var fallback = sel.value === '__new__' ? 'other' : sel.value;
-                var parent = selId === 'advCat' ? 'advancedItemModal' : 'advancedItemModal2';
-                handleCategoryChange(sel, fallback, parent);
-            });
-        });
-        var addCat = $('addItemCat');
-        if (addCat) addCat.addEventListener('change', function() {
-            var fallback = addCat.value === '__new__' ? 'other' : addCat.value;
-            handleCategoryChange(addCat, fallback, 'addItemModal');
-        });
-
-        // Свайп в tipViewer — только горизонтальный + быстрый вертикальный вниз для закрытия
+        // Свайп в tipViewer
         var tv = $('tipViewer');
         if (tv) {
             var tStartX = 0, tStartY = 0, tStartT = 0, tDown = false, tMoved = false, tMovedAt = 0;
@@ -261,6 +254,34 @@ function init() {
                 if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
                     if (dx < 0 && currentTipIdx < TIPS_CATEGORIES.length - 1) openTipViewer(currentTipIdx + 1);
                     else if (dx > 0 && currentTipIdx > 0) openTipViewer(currentTipIdx - 1);
+                }
+            }, { passive: true });
+        }
+
+        // Свайп справа налево по странице настроек → назад
+        var sp = $('settingsPage');
+        if (sp) {
+            var spStartX = 0, spStartY = 0, spDown = false, spHoriz = false;
+            sp.addEventListener('touchstart', function(e) {
+                spStartX = e.touches[0].clientX;
+                spStartY = e.touches[0].clientY;
+                spDown = true;
+                spHoriz = false;
+            }, { passive: true });
+            sp.addEventListener('touchmove', function(e) {
+                if (!spDown) return;
+                var dx = e.touches[0].clientX - spStartX;
+                var dy = e.touches[0].clientY - spStartY;
+                if (!spHoriz && Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy) * 1.5) spHoriz = true;
+            }, { passive: true });
+            sp.addEventListener('touchend', function(e) {
+                if (!spDown) return;
+                spDown = false;
+                if (!spHoriz) return;
+                var dx = e.changedTouches[0].clientX - spStartX;
+                if (dx > 80) {
+                    // свайп слева направо = назад
+                    try { closeSettingsPage(); } catch (err) {}
                 }
             }, { passive: true });
         }
