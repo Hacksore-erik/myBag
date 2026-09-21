@@ -2646,3 +2646,83 @@ function handleNotifLater() {
     closeModal('notifOnboardModal');
     try { localStorage.setItem('bybag_notif_asked', '1'); } catch (e) {}
 }
+
+// ============ РЕДАКТИРОВАНИЕ ПРОФИЛЯ ============
+function openEditProfile() {
+    try {
+        var n = $('editName'); if (n) n.value = profile.name || '';
+        var ea = $('editAvatar'), el = $('editAvatarLetter');
+        if (ea && el) {
+            if (profile.avatar) {
+                ea.style.backgroundImage = 'url(' + profile.avatar + ')';
+                el.textContent = '';
+            } else {
+                ea.style.backgroundImage = '';
+                el.textContent = (profile.name || 'Э').charAt(0).toUpperCase();
+            }
+        }
+        openModal('editProfileModal');
+    } catch (e) {
+        bbLogError(8002, 'Ошибка открытия редактирования профиля: ' + e.message, { stack: e.stack });
+        showToast('Ошибка: ' + e.message);
+    }
+}
+
+function saveProfileChanges() {
+    try {
+        profile.name = (($('editName') || {}).value || '').trim() || 'Эрик';
+        saveProfile();
+        closeModal('editProfileModal');
+        renderProfile();
+        showToast('Профиль сохранён');
+    } catch (e) {
+        bbLogError(8002, 'Ошибка сохранения профиля: ' + e.message, { stack: e.stack });
+        showToast('Ошибка сохранения');
+    }
+}
+
+function handleAvatarUpload(e) {
+    var f = e.target.files && e.target.files[0]; if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function(ev) {
+        var img = new Image();
+        img.onload = function() {
+            try {
+                var c = document.createElement('canvas');
+                c.width = 200; c.height = 200;
+                var x = c.getContext('2d');
+                var mn = Math.min(img.width, img.height);
+                x.drawImage(img, (img.width - mn) / 2, (img.height - mn) / 2, mn, mn, 0, 0, 200, 200);
+                var d = c.toDataURL('image/jpeg', .85);
+                profile.avatar = d;
+                var ea = $('editAvatar'); if (ea) ea.style.backgroundImage = 'url(' + d + ')';
+                var el = $('editAvatarLetter'); if (el) el.textContent = '';
+                saveProfile();
+                renderProfile();
+            } catch (ex) {
+                bbLogError(8001, 'Ошибка обработки аватара', { stack: ex.stack });
+                showToast('Ошибка загрузки фото');
+            }
+        };
+        img.onerror = function() {
+            bbLogError(8001, 'Не удалось загрузить изображение');
+            showToast('Не удалось загрузить фото');
+        };
+        img.src = ev.target.result;
+    };
+    rd.readAsDataURL(f);
+}
+
+function resetAvatar() {
+    try {
+        profile.avatar = null;
+        saveProfile();
+        var ea = $('editAvatar'); if (ea) ea.style.backgroundImage = '';
+        var el = $('editAvatarLetter');
+        if (el) el.textContent = ((($('editName') || {}).value || '') || 'Э').charAt(0).toUpperCase();
+        renderProfile();
+        showToast('Фото удалено');
+    } catch (e) {
+        bbLogError(8001, 'Ошибка сброса аватара: ' + e.message, { stack: e.stack });
+    }
+}
