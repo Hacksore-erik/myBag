@@ -24,7 +24,7 @@ var tipsMode = 'cat';
 function $(id) { try { return document.getElementById(id); } catch (e) { return null; } }
 
 function escapeHtml(s) {
-    try { return String(s).replace(/[&<>"']/g, function(m) { return {'&':'&amp;',' вещей<':'&lt (;','>':'&gt;','фи"':'&quot;',"'":'&#39;'}[m]; }); }
+    try { return String(s).replace(/[&<>"']/g, function(m) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
     catch (e) { return ''; }
 }
 
@@ -173,7 +173,7 @@ function loadData() {
         try { localStorage.setItem('bybag_defaults_added', '1'); } catch (e) {}
     }
 
-    // Миграция: убираем поле category у всехча убрана)
+    // Миграция: убираем поле category у всех вещей (фича убрана)
     function stripCategory(item) {
         if (item && typeof item === 'object' && item.category !== undefined) {
             delete item.category;
@@ -186,6 +186,8 @@ function loadData() {
         if (!Array.isArray(t.items)) t.items = [];
         t.items = t.items.map(function(i) { return stripCategory(normalizeItem(i)); });
         if (!t.daysCount) t.daysCount = 3;
+        if (!t.info) t.info = {};
+        if (!Array.isArray(t.notes)) t.notes = [];
     });
     if (activeTrips.length > MAX_ACTIVE_TRIPS) activeTrips = activeTrips.slice(0, MAX_ACTIVE_TRIPS);
     if (currentTripIndex >= activeTrips.length) currentTripIndex = 0;
@@ -220,6 +222,8 @@ function loadData() {
         if (h.fullItems && Array.isArray(h.fullItems)) {
             h.fullItems = h.fullItems.map(function(i) { return stripCategory(normalizeItem(i)); });
         }
+        if (!h.info) h.info = {};
+        if (!Array.isArray(h.notes)) h.notes = [];
     });
 }
 
@@ -276,16 +280,72 @@ function getTripStats(trip) {
 }
 
 function calcStats() {
-    var tt = tripHistory.length + activeTrips.length;
+    var allTrips = activeTrips.concat(tripHistory);
+    var tt = allTrips.length;
     var ad = 0, pt = 0, combined = 0;
-    tripHistory.forEach(function(h) { ad += h.done || 0; if (h.total > 0 && h.done === h.total) pt++; if (h.listIds && h.listIds.length >= 2) combined++; });
-    activeTrips.forEach(function(t) {
-        var s = getTripStats(t);
-        ad += s.done;
-        if (s.total > 0 && s.done === s.total) pt++;
-        if (t.listIds && t.listIds.length >= 2) combined++;
+    var completed = tripHistory.length;
+
+    // Новые счётчики для достижений
+    var citiesSet = {};
+    var hasBooking = 0, hasFlight = 0, hasPhone = 0, hasAddress = 0, hasDates = 0;
+    var totalNotes = 0;
+
+    allTrips.forEach(function(t) {
+        if (!t || typeof t !== 'object') return;
+
+        // Вещи
+        var items = Array.isArray(t.items) ? t.items : [];
+        var doneCount = 0;
+        items.forEach(function(i) { if (i && i.done) doneCount++; });
+        ad += doneCount;
+        if (items.length > 0 && doneCount === items.length) pt++;
+
+        // Списки
+        if (t.listIds && Array.isArray(t.listIds) && t.listIds.length >= 2) combined++;
+
+        // Города
+        if (t.city && typeof t.city === 'string') {
+            var cityKey = t.city.toLowerCase().trim();
+            if (cityKey) citiesSet[cityKey] = true;
+        }
+
+        // Даты
+        if (t.startDate && t.endDate) hasDates++;
+
+        // Инфо (бронь, рейс, телефон, адрес)
+        var info = t.info || {};
+        if (info.hotelBooking && String(info.hotelBooking).trim()) hasBooking++;
+        if (info.flightNumber && String(info.flightNumber).trim()) hasFlight++;
+        if (info.hotelPhone && String(info.hotelPhone).trim()) hasPhone++;
+        if (info.hotelAddress && String(info.hotelAddress).trim()) hasAddress++;
+
+        // Заметки
+        if (Array.isArray(t.notes)) totalNotes += t.notes.length;
     });
-    return { totalTrips: tt, completedTrips: tripHistory.length, allDone: ad, perfectTrips: pt, customCount: Object.keys(customTypes).length, combinedTrips: combined };
+
+    // Для истории — считаем fullItems как done
+    tripHistory.forEach(function(h) {
+        if (!h) return;
+        if (h.total > 0 && h.done === h.total) {
+            // Уже посчитано выше, но на случай если fullItems нет
+        }
+    });
+
+    return {
+        totalTrips: tt,
+        completedTrips: completed,
+        allDone: ad,
+        perfectTrips: pt,
+        customCount: Object.keys(customTypes).length,
+        combinedTrips: combined,
+        uniqueCities: Object.keys(citiesSet).length,
+        hasBooking: hasBooking,
+        hasFlight: hasFlight,
+        hasPhone: hasPhone,
+        hasAddress: hasAddress,
+        hasDates: hasDates,
+        totalNotes: totalNotes
+    };
 }
 
 function applyTheme() {
