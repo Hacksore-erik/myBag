@@ -7,6 +7,7 @@
 // ============ УТИЛИТЫ ============
 var editingItemIdx = null;
 var editingNoteIdx = null;
+var achievementsRendered = false;
 
 function attachLongPress(el, onLong, onClick) {
     var timer = null, startX = 0, startY = 0, moved = false, longFired = false, clickHandled = false;
@@ -30,7 +31,6 @@ function attachLongPress(el, onLong, onClick) {
     el.addEventListener('touchend', function(e) {
         clear();
         if (longFired || moved) return;
-        // ВАЖНО: гасим синтетический click после touchend
         clickHandled = true;
         setTimeout(function() { clickHandled = false; }, 400);
         if (onClick) onClick(e);
@@ -344,7 +344,6 @@ function saveNote() {
 
         saveActive();
         closeNoteModal();
-        // Обновляем TripPage (там заметки) и чек-лист (на случай если открыт)
         renderTripPage();
         if ($('checklistPage') && $('checklistPage').classList.contains('active')) renderChecklistPage();
         vibrate();
@@ -430,7 +429,6 @@ function renderTripPage() {
 
         var trip = getCurrentTrip();
 
-        // Заглушка — нет активной поездки
         if (!trip) {
             var empty = document.createElement('div');
             empty.className = 'empty-hero';
@@ -441,10 +439,8 @@ function renderTripPage() {
             return;
         }
 
-        // ===== 1. Карусель поездок (Вариант 4) =====
         cont.appendChild(buildTripPageCarousel());
 
-        // ===== 2. Погода =====
         if (trip.city) {
             var weatherTitle = document.createElement('div');
             weatherTitle.className = 'stats-title';
@@ -460,7 +456,6 @@ function renderTripPage() {
             loadWeather();
         }
 
-        // ===== 3. Кнопка «Открыть список вещей» =====
         var openBtn = document.createElement('button');
         openBtn.type = 'button';
         openBtn.className = 'btn-primary';
@@ -474,7 +469,6 @@ function renderTripPage() {
         });
         cont.appendChild(openBtn);
 
-        // ===== 4. Информация (бронь + рейс) =====
         var infoTitle = document.createElement('div');
         infoTitle.className = 'stats-title';
         infoTitle.textContent = 'Информация';
@@ -512,7 +506,6 @@ function renderTripPage() {
 
         cont.appendChild(infoMenu);
 
-        // ===== 5. Заметки =====
         var notesTitle = document.createElement('div');
         notesTitle.className = 'stats-title';
         notesTitle.style.marginTop = '20px';
@@ -532,18 +525,15 @@ function buildTripPageCarousel() {
 
     var total = activeTrips.length;
 
-    // Одна поездка — просто карточка без стрелок и точек
     if (total <= 1) {
         var single = buildTripCompactWidget(activeTrips[0]);
         wrap.appendChild(single);
         return wrap;
     }
 
-    // 2+ поездки — карусель со стрелками и точками
     var row = document.createElement('div');
     row.className = 'trip-page-carousel-row';
 
-    // Стрелка назад
     var prevBtn = document.createElement('button');
     prevBtn.type = 'button';
     prevBtn.className = 'tc-arrow tc-prev';
@@ -555,7 +545,6 @@ function buildTripPageCarousel() {
     });
     row.appendChild(prevBtn);
 
-    // Трек с карточками
     var carousel = document.createElement('div');
     carousel.className = 'trip-page-carousel';
     var track = document.createElement('div');
@@ -565,7 +554,6 @@ function buildTripPageCarousel() {
     carousel.appendChild(track);
     row.appendChild(carousel);
 
-    // Стрелка вперёд
     var nextBtn = document.createElement('button');
     nextBtn.type = 'button';
     nextBtn.className = 'tc-arrow tc-next';
@@ -579,7 +567,6 @@ function buildTripPageCarousel() {
 
     wrap.appendChild(row);
 
-    // Точки
     var dots = document.createElement('div');
     dots.className = 'trip-page-dots';
     for (var i = 0; i < total; i++) {
@@ -592,7 +579,6 @@ function buildTripPageCarousel() {
     }
     wrap.appendChild(dots);
 
-    // Ставим transform сразу
     setTimeout(function() {
         var tr = $('tripPageTrack');
         if (tr) tr.style.transform = 'translateX(-' + (currentTripIndex * 100) + '%)';
@@ -611,7 +597,6 @@ function buildTripCompactWidget(trip) {
     var widget = document.createElement('div');
     widget.className = 'trip-compact-widget';
 
-    // Строка 1: emoji + name + countdown
     var row1 = document.createElement('div');
     row1.className = 'trip-compact-row';
     row1.innerHTML =
@@ -623,7 +608,6 @@ function buildTripCompactWidget(trip) {
         (cdText ? '<div class="trip-compact-countdown">' + escapeHtml(cdText) + '</div>' : '');
     widget.appendChild(row1);
 
-    // Строка 2: прогресс-бар + счётчик + процент
     var row2 = document.createElement('div');
     row2.className = 'trip-compact-progress';
     row2.innerHTML =
@@ -632,7 +616,6 @@ function buildTripCompactWidget(trip) {
         '<div class="trip-compact-percent">' + s.percent + '%</div>';
     widget.appendChild(row2);
 
-    // Клик по карточке — переключение на неё и открытие чек-листа
     widget.addEventListener('click', function() {
         var i = activeTrips.indexOf(trip);
         if (i !== -1) currentTripIndex = i;
@@ -655,8 +638,6 @@ function goToTripPage(idx) {
     if (prevBtn) prevBtn.disabled = (idx === 0);
     if (nextBtn) nextBtn.disabled = (idx >= total - 1);
     vibrate();
-
-    // Обновляем погоду и инфо (без полного ре-рендера — иначе карусель пересоберётся и свайп сломается)
     updateTripPageWeatherAndInfo();
 }
 
@@ -664,26 +645,17 @@ function updateTripPageWeatherAndInfo() {
     try {
         var trip = getCurrentTrip();
         if (!trip) return;
-
-        // Заголовок карточки и кнопки — обновятся через renderTripPage
-        // Но чтобы карусель не пересобиралась (потеряем transform), обновляем только погоду и инфо-блок
         var cont = $('tripPageContent');
         if (!cont) return;
-
-        // Проще: перерисовываем только секции после карусели
-        // Находим элементы после wrap
         var wrap = cont.querySelector('.trip-page-carousel-wrap');
         if (!wrap) { renderTripPage(); return; }
 
-        // Удаляем всё после wrap
         var next = wrap.nextSibling;
         while (next) {
             var toRemove = next;
             next = next.nextSibling;
             cont.removeChild(toRemove);
         }
-
-        // Перерисовываем хвост (погода, кнопка, инфо, заметки)
         renderTripPageTail(cont, trip);
     } catch (e) {
         bbLogError(9028, 'Ошибка переключения поездки: ' + e.message, { stack: e.stack });
@@ -692,7 +664,6 @@ function updateTripPageWeatherAndInfo() {
 }
 
 function renderTripPageTail(cont, trip) {
-    // Погода
     if (trip.city) {
         var weatherTitle = document.createElement('div');
         weatherTitle.className = 'stats-title';
@@ -708,7 +679,6 @@ function renderTripPageTail(cont, trip) {
         loadWeather();
     }
 
-    // Кнопка
     var openBtn = document.createElement('button');
     openBtn.type = 'button';
     openBtn.className = 'btn-primary';
@@ -722,7 +692,6 @@ function renderTripPageTail(cont, trip) {
     });
     cont.appendChild(openBtn);
 
-    // Информация
     var infoTitle = document.createElement('div');
     infoTitle.className = 'stats-title';
     infoTitle.textContent = 'Информация';
@@ -760,7 +729,6 @@ function renderTripPageTail(cont, trip) {
 
     cont.appendChild(infoMenu);
 
-    // Заметки
     var notesTitle = document.createElement('div');
     notesTitle.className = 'stats-title';
     notesTitle.style.marginTop = '20px';
@@ -953,6 +921,7 @@ function closeTipViewer() {
     resetUIBlocks();
     buildTips();
 }
+
 // ============ ГЛАВНАЯ ============
 function renderHome() {
     try {
@@ -1724,7 +1693,9 @@ function completeActiveTrip() {
         id: trip.id, type: trip.type, name: trip.name, emoji: trip.emoji, date: trip.date,
         city: trip.city || '', startDate: trip.startDate || null,
         total: s.total, done: s.done, listIds: trip.listIds || [],
-        fullItems: trip.items.map(function(i) { return { text: i.text, qty: i.qty, note: i.note }; })
+        fullItems: trip.items.map(function(i) { return { text: i.text, qty: i.qty, note: i.note, done: i.done }; }),
+        info: trip.info ? JSON.parse(JSON.stringify(trip.info)) : {},
+        notes: Array.isArray(trip.notes) ? trip.notes.map(function(n) { return { emoji: n.emoji, text: n.text }; }) : []
     });
     activeTrips.splice(currentTripIndex, 1);
     if (currentTripIndex >= activeTrips.length) currentTripIndex = Math.max(0, activeTrips.length - 1);
@@ -1784,8 +1755,6 @@ function renderChecklistPage() {
         var cont = $('checklistContainer'); if (!cont) return;
         cont.innerHTML = '';
         var q = searchQuery.toLowerCase().trim();
-
-        // Заметки БОЛЬШЕ НЕ РЕНДЕРИМ здесь — они только на TripPage (задача #1)
 
         var vis = [];
         trip.items.forEach(function(it, i) {
@@ -2282,66 +2251,162 @@ function renderProfile() {
     } catch (e) { bbLogError(3003, 'Ошибка рендера профиля', { stack: e.stack }); }
 }
 
+// ============ ДОСТИЖЕНИЯ ============
 function renderAchievements(s) {
     var g = $('achievementsGrid'); if (!g) return;
     g.innerHTML = '';
-    var un = [];
-    ACHIEVEMENTS.forEach(function(a) {
-        var is = false;
-        try { is = a.check(s); } catch (e) {}
-        if (is && !achievementsState[a.id]) { achievementsState[a.id] = Date.now(); un.push(a); }
-        var d = document.createElement('div');
-        d.className = 'achievement' + (is ? ' unlocked' : '');
-        d.innerHTML = '<div class="ach-icon">' + a.icon + '</div><div class="ach-name">' + a.name + '</div><div class="ach-desc">' + a.desc + '</div>';
-        g.appendChild(d);
+
+    var isFirstRender = !achievementsRendered;
+    achievementsRendered = true;
+
+    // Считаем прогресс для каждой
+    var items = ACHIEVEMENTS.map(function(a) {
+        var progress = 0, max = a.max || 1, unlocked = false;
+        try { progress = a.getProgress ? a.getProgress(s) : 0; } catch (e) { progress = 0; }
+        try { unlocked = a.check(s); } catch (e) { unlocked = false; }
+        if (unlocked && !achievementsState[a.id]) achievementsState[a.id] = Date.now();
+        return { a: a, progress: progress, max: max, unlocked: unlocked };
     });
+
+    // Сортировка: разблокированные (свежие сверху) → в процессе (по % убыв) → не начатые
+    items.sort(function(x, y) {
+        if (x.unlocked !== y.unlocked) return x.unlocked ? -1 : 1;
+        if (x.unlocked && y.unlocked) {
+            var dx = achievementsState[x.a.id] || 0;
+            var dy = achievementsState[y.a.id] || 0;
+            return dy - dx;
+        }
+        var px = x.max > 0 ? x.progress / x.max : 0;
+        var py = y.max > 0 ? y.progress / y.max : 0;
+        return py - px;
+    });
+
+    var unlockedCount = items.filter(function(it) { return it.unlocked; }).length;
+
+    // Счётчик в шапке — обновим, если есть элемент
+    var counter = $('achCounter');
+    if (counter) counter.textContent = unlockedCount + ' из ' + ACHIEVEMENTS.length;
+
+    // Рендер карточек
+    items.forEach(function(it, idx) {
+        var a = it.a;
+        var pct = it.max > 0 ? Math.min(100, Math.round((it.progress / it.max) * 100)) : 0;
+
+        var card = document.createElement('div');
+        card.className = 'achievement-row' + (it.unlocked ? ' unlocked' : '');
+
+        if (isFirstRender) {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(8px)';
+            card.style.animation = 'achFadeIn .35s ease ' + (idx * 0.04) + 's forwards';
+        }
+
+        var barColor = it.unlocked
+            ? 'linear-gradient(90deg,#4ecb71,#2f9c53)'
+            : 'linear-gradient(90deg,var(--accent-1),var(--accent-2))';
+
+        card.innerHTML =
+            '<div class="ach-row-top">' +
+                '<div class="ach-row-icon">' + a.icon + '</div>' +
+                '<div class="ach-row-name">' + escapeHtml(a.name) + '</div>' +
+            '</div>' +
+            '<div class="ach-row-bar">' +
+                '<div class="ach-row-fill" style="width:' + pct + '%;background:' + barColor + '"></div>' +
+            '</div>';
+
+        card.addEventListener('click', function() { openAchievementSheet(a.id); });
+        g.appendChild(card);
+    });
+
     saveAchievements();
-    if (un.length) setTimeout(function() { showToast('🏆 ' + un[0].name); }, 500);
+
+    // Тост о новом достижении
+    if (isFirstRender) {
+        var justUnlocked = [];
+        ACHIEVEMENTS.forEach(function(a) {
+            if (achievementsState[a.id] && Date.now() - achievementsState[a.id] < 3000) justUnlocked.push(a);
+        });
+        if (justUnlocked.length) {
+            setTimeout(function() { showToast('🏆 ' + justUnlocked[0].name); }, 500);
+        }
+    }
 }
 
-function openEditProfile() {
-    var n = $('editName'); if (n) n.value = profile.name || '';
-    var ea = $('editAvatar'), el = $('editAvatarLetter');
-    if (ea && el) {
-        if (profile.avatar) { ea.style.backgroundImage = 'url(' + profile.avatar + ')'; el.textContent = ''; }
-        else { ea.style.backgroundImage = ''; el.textContent = (profile.name || 'Э').charAt(0).toUpperCase(); }
+// ============ BOTTOM SHEET ДОСТИЖЕНИЯ ============
+function openAchievementSheet(id) {
+    try {
+        var a = null;
+        for (var i = 0; i < ACHIEVEMENTS.length; i++) {
+            if (ACHIEVEMENTS[i].id === id) { a = ACHIEVEMENTS[i]; break; }
+        }
+        if (!a) return;
+
+        var s = calcStats();
+        var progress = 0, max = a.max || 1, unlocked = false;
+        try { progress = a.getProgress ? a.getProgress(s) : 0; } catch (e) { progress = 0; }
+        try { unlocked = a.check(s); } catch (e) { unlocked = false; }
+
+        var pct = max > 0 ? Math.min(100, Math.round((progress / max) * 100)) : 0;
+        var remaining = Math.max(0, max - progress);
+
+        var sheet = $('achievementSheet');
+        if (!sheet) return;
+
+        var iconEl = $('achSheetIcon'); if (iconEl) iconEl.textContent = a.icon;
+        var nameEl = $('achSheetName'); if (nameEl) nameEl.textContent = a.name;
+        var descEl = $('achSheetDesc');
+        if (descEl) {
+            var text = a.fullDesc || a.desc || '';
+            if (unlocked) {
+                var dateStr = '';
+                if (achievementsState[a.id]) {
+                    try {
+                        var d = new Date(achievementsState[a.id]);
+                        dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+                    } catch (e) {}
+                }
+                if (dateStr) {
+                    text += '\n\n✨ Получено ' + dateStr;
+                } else {
+                    text += '\n\n✨ Получено!';
+                }
+            }
+            descEl.textContent = text;
+        }
+        var progressEl = $('achSheetProgress');
+        if (progressEl) {
+            progressEl.textContent = 'Сейчас: ' + progress + ' из ' + max;
+        }
+        var barEl = $('achSheetBar');
+        if (barEl) {
+            barEl.style.width = pct + '%';
+            barEl.style.background = unlocked
+                ? 'linear-gradient(90deg,#4ecb71,#2f9c53)'
+                : 'linear-gradient(90deg,var(--accent-1),var(--accent-2))';
+        }
+        var remainEl = $('achSheetRemain');
+        if (remainEl) {
+            if (unlocked) {
+                remainEl.textContent = 'Достижение получено';
+                remainEl.style.color = 'var(--success)';
+            } else {
+                remainEl.textContent = 'Осталось: ' + remaining + ' ' + plural(remaining, a.unit || 'шаг', a.unit ? a.unit + 'а' : 'шага', a.unit ? a.unit + 'ов' : 'шагов');
+                remainEl.style.color = '';
+            }
+        }
+
+        sheet.classList.add('show');
+        resetUIBlocks();
+        vibrate();
+    } catch (e) {
+        bbLogError(9029, 'Ошибка открытия достижения: ' + e.message, { stack: e.stack });
     }
-    openModal('editProfileModal');
 }
-function saveProfileChanges() {
-    profile.name = (($('editName') || {}).value || '').trim() || 'Эрик';
-    saveProfile(); closeModal('editProfileModal'); renderProfile();
-}
-function handleAvatarUpload(e) {
-    var f = e.target.files && e.target.files[0]; if (!f) return;
-    var rd = new FileReader();
-    rd.onload = function(ev) {
-        var img = new Image();
-        img.onload = function() {
-            try {
-                var c = document.createElement('canvas');
-                c.width = 200; c.height = 200;
-                var x = c.getContext('2d');
-                var mn = Math.min(img.width, img.height);
-                x.drawImage(img, (img.width - mn) / 2, (img.height - mn) / 2, mn, mn, 0, 0, 200, 200);
-                var d = c.toDataURL('image/jpeg', .85);
-                profile.avatar = d;
-                var ea = $('editAvatar'); if (ea) ea.style.backgroundImage = 'url(' + d + ')';
-                var el = $('editAvatarLetter'); if (el) el.textContent = '';
-                saveProfile(); renderProfile();
-            } catch (ex) { bbLogError(8001, 'Ошибка обработки аватара', { stack: ex.stack }); }
-        };
-        img.onerror = function() { bbLogError(8001, 'Не удалось загрузить изображение'); };
-        img.src = ev.target.result;
-    };
-    rd.readAsDataURL(f);
-}
-function resetAvatar() {
-    profile.avatar = null;
-    saveProfile();
-    var ea = $('editAvatar'); if (ea) ea.style.backgroundImage = '';
-    var el = $('editAvatarLetter'); if (el) el.textContent = ((($('editName') || {}).value || '') || 'Э').charAt(0).toUpperCase();
-    renderProfile();
+
+function closeAchievementSheet() {
+    var sheet = $('achievementSheet');
+    if (sheet) sheet.classList.remove('show');
+    resetUIBlocks();
 }
 
 // ============ ЭКСПОРТ / ИМПОРТ ============
@@ -2455,6 +2520,41 @@ function openErrorLog() {
     });
 }
 
+// ============ НАСТРОЙКИ ============
+function openSettingsPage() {
+    try {
+        var sp = $('settingsPage');
+        if (!sp) {
+            showToast('Ошибка: settingsPage не найдена в HTML');
+            bbLogError(9029, 'settingsPage отсутствует в HTML');
+            return;
+        }
+        var e = $('errorCountLabel'); if (e) e.textContent = bbGetErrorLog().length;
+        applyTheme();
+        sp.classList.add('active');
+        resetUIBlocks();
+        var bn = document.querySelector('.bottom-nav');
+        if (bn) bn.style.display = 'none';
+        vibrate();
+    } catch (err) {
+        bbLogError(9029, 'Ошибка открытия настроек: ' + err.message, { stack: err.stack });
+        showToast('Ошибка открытия настроек: ' + err.message);
+    }
+}
+
+function closeSettingsPage() {
+    try {
+        var sp = $('settingsPage');
+        if (sp) sp.classList.remove('active');
+        resetUIBlocks();
+        var bn = document.querySelector('.bottom-nav');
+        if (bn) bn.style.display = '';
+        renderProfile();
+    } catch (e) {
+        bbLogError(9029, 'Ошибка закрытия настроек: ' + e.message, { stack: e.stack });
+    }
+}
+
 // ============ ОНБОРДИНГ ============
 function showOnboarding() {
     currentOnbSlide = 0;
@@ -2545,43 +2645,4 @@ function handleNotifAllow() {
 function handleNotifLater() {
     closeModal('notifOnboardModal');
     try { localStorage.setItem('bybag_notif_asked', '1'); } catch (e) {}
-}
-
-// ============ СТРАНИЦА НАСТРОЕК (задача #8) ============
-function openSettingsPage() {
-    try {
-        var sp = $('settingsPage');
-        if (!sp) {
-            showToast('Ошибка: settingsPage не найдена в HTML');
-            bbLogError(9029, 'settingsPage отсутствует в HTML');
-            return;
-        }
-        // Обновляем значения тоглов и счётчика ошибок перед показом
-        var e = $('errorCountLabel'); if (e) e.textContent = bbGetErrorLog().length;
-        applyTheme(); // обновит .on на тоглах
-        sp.classList.add('active');
-        resetUIBlocks();
-        // Прячем нижнюю навигацию (чтобы не мешала — как в чек-листе)
-        var bn = document.querySelector('.bottom-nav');
-        if (bn) bn.style.display = 'none';
-        vibrate();
-    } catch (err) {
-        bbLogError(9029, 'Ошибка открытия настроек: ' + err.message, { stack: err.stack });
-        showToast('Ошибка открытия настроек: ' + err.message);
-    }
-}
-
-function closeSettingsPage() {
-    try {
-        var sp = $('settingsPage');
-        if (sp) sp.classList.remove('active');
-        resetUIBlocks();
-        // Возвращаем нижнюю навигацию
-        var bn = document.querySelector('.bottom-nav');
-        if (bn) bn.style.display = '';
-        // Обновляем профиль — на случай, если меняли имя/аватар
-        renderProfile();
-    } catch (e) {
-        bbLogError(9029, 'Ошибка закрытия настроек: ' + e.message, { stack: e.stack });
-    }
 }
