@@ -155,10 +155,14 @@ function init() {
             } catch (e) {}
         });
         bind('settingsEditProfileBtn', 'click', function() {
-            try {
-                if (typeof openEditProfile === 'function') openEditProfile();
-            } catch (e) {}
-        });
+    try {
+        if (typeof openEditProfile === 'function') openEditProfile();
+        var pm = $('editProfileModal');
+        if (pm) pm.classList.add('above-settings');
+    } catch (e) {
+        showToast('Ошибка профиля: ' + e.message);
+    }
+});
 
         // Заметки о поездке
         bind('noteSaveBtn', 'click', function() {
@@ -227,7 +231,16 @@ function init() {
         bind('notifLaterBtn', 'click', handleNotifLater);
 
         // Журнал ошибок
-        bind('viewErrorLogBtn', 'click', function() { openErrorLog(); openModal('errorLogModal'); });
+        bind('viewErrorLogBtn', 'click', function() {
+    try {
+        openErrorLog();
+        var em = $('errorLogModal');
+        if (em) em.classList.add('above-settings');
+        openModal('errorLogModal');
+    } catch (e) {
+        showToast('Ошибка журнала: ' + e.message);
+    }
+});
         bind('downloadLogBtn', 'click', downloadErrorLog);
         bind('clearLogBtn', 'click', function() {
             if (confirm('Очистить журнал ошибок?')) { bbClearErrorLog(); openErrorLog(); renderProfile(); }
