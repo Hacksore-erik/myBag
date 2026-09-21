@@ -118,7 +118,7 @@ body.dark .trip-compact-countdown{background:rgba(107,140,255,.18);color:#a9bdff
 .trip-compact-percent{font-size:11px;font-weight:700;color:var(--text-3);flex-shrink:0;min-width:34px;text-align:right}
 
 /* ============================================================
-   КАРУСЕЛЬ НА ВКЛАДКЕ «ПОЕЗДКА» (Вариант 4: стрелки + точки + свайп)
+   КАРУСЕЛЬ НА ВКЛАДКЕ «ПОЕЗДКА»
    ============================================================ */
 .trip-page-carousel-wrap{position:relative;margin-bottom:4px}
 .trip-page-carousel-row{display:flex;align-items:center;gap:6px}
@@ -152,6 +152,48 @@ body.dark .empty-hero{border-color:rgba(107,140,255,.4)}
 .history-item .h-badge{font-size:11px;font-weight:700;padding:5px 10px;border-radius:10px;background:rgba(78,203,113,.15);color:var(--success);flex-shrink:0}
 body.dark .history-item .h-badge{background:rgba(61,220,132,.15)}
 .icon-btn{background:transparent;border:none;color:var(--text-3);width:26px;height:26px;border-radius:50%;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;padding:0;opacity:.5}
+
+/* ============================================================
+   ДОСТИЖЕНИЯ — новый вид (2 в ряд, полоски)
+   ============================================================ */
+.achievements-header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 4px;margin-bottom:12px}
+.ach-counter{font-size:12px;font-weight:700;color:var(--text-3);letter-spacing:.3px}
+.achievements-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:22px}
+.achievement-row{background:var(--card);border:1px solid var(--border-soft);border-radius:14px;padding:10px 12px 8px;cursor:pointer;transition:transform .15s ease,background .15s ease;-webkit-tap-highlight-color:transparent;position:relative;overflow:hidden}
+.achievement-row:active{transform:scale(.97);background:var(--card-solid)}
+body:not(.dark) .achievement-row{background:#fff}
+.achievement-row.unlocked{border-color:rgba(78,203,113,.35);box-shadow:0 2px 12px rgba(78,203,113,.12)}
+.ach-row-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;min-width:0}
+.ach-row-icon{font-size:20px;line-height:1;flex-shrink:0;transition:filter .3s ease,opacity .3s ease}
+.achievement-row.unlocked .ach-row-icon{filter:drop-shadow(0 2px 6px rgba(255,107,138,.4))}
+.achievement-row:not(.unlocked) .ach-row-icon{opacity:.4;filter:grayscale(1)}
+.ach-row-name{font-size:12.5px;font-weight:700;color:var(--text);line-height:1.2;letter-spacing:-.2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.ach-row-bar{height:3px;background:var(--border-soft);border-radius:100px;overflow:hidden}
+.ach-row-fill{height:100%;border-radius:100px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.achievement-row:not(.unlocked) .ach-row-fill{opacity:.7}
+@keyframes achFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ============================================================
+   BOTTOM SHEET — ДОСТИЖЕНИЕ
+   ============================================================ */
+.ach-sheet-overlay{position:fixed;inset:0;z-index:220;display:none}
+.ach-sheet-overlay.show{display:block}
+.ach-sheet-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0);animation:achBackdropIn .3s ease forwards}
+@keyframes achBackdropIn{to{background:rgba(0,0,0,.5)}}
+body.dark .ach-sheet-backdrop{animation:achBackdropInDark .3s ease forwards}
+@keyframes achBackdropInDark{to{background:rgba(0,0,0,.7)}}
+.ach-sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:28px 28px 0 0;padding:12px 24px 40px;box-shadow:0 -8px 40px rgba(0,0,0,.25);transform:translateY(100%);animation:achSheetIn .35s cubic-bezier(.4,0,.2,1) forwards;max-height:85vh;overflow-y:auto;scrollbar-width:none}
+.ach-sheet::-webkit-scrollbar{display:none}
+@keyframes achSheetIn{to{transform:translateY(0)}}
+.ach-sheet-handle{width:40px;height:4px;background:var(--border-soft);border-radius:100px;margin:0 auto 20px}
+.ach-sheet-icon{font-size:64px;line-height:1;text-align:center;margin-bottom:14px;filter:drop-shadow(0 6px 16px rgba(255,107,138,.35))}
+.ach-sheet-name{font-size:20px;font-weight:800;color:var(--text);text-align:center;letter-spacing:-.4px;text-transform:uppercase;margin-bottom:18px;padding:0 8px;line-height:1.2}
+.ach-sheet-divider{height:1px;background:var(--border-soft);margin:0 auto 18px;width:60%}
+.ach-sheet-desc{font-size:15px;line-height:1.55;color:var(--text-2);text-align:center;font-weight:500;margin-bottom:22px;padding:0 4px;white-space:pre-line}
+.ach-sheet-progress-label{font-size:12.5px;font-weight:700;color:var(--text-3);text-align:center;margin-bottom:8px;letter-spacing:.3px}
+.ach-sheet-bar{height:6px;background:var(--border-soft);border-radius:100px;overflow:hidden;margin-bottom:10px}
+.ach-sheet-fill{height:100%;border-radius:100px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.ach-sheet-remain{font-size:13px;font-weight:700;color:var(--text-3);text-align:center;letter-spacing:.2px}
 
 /* CHECKLIST PAGE */
 .checklist-page{position:fixed;inset:0;background:var(--bg);z-index:150;display:none;flex-direction:column;overflow:hidden}
@@ -219,8 +261,7 @@ body.dark .search-highlight{background:rgba(255,210,90,.4);color:#fff}
 .progress-fill.complete{background:linear-gradient(90deg,#4ecb71,#38b2ac)}
 
 /* ============================================================
-   WEATHER — уменьшено на ~15% (задача #3.1)
-   Размеры/отступы −15%, шрифты −10%
+   WEATHER — уменьшено на ~15%
    ============================================================ */
 .weather-card{margin-bottom:12px;padding:0;background:var(--card);border:1.5px solid var(--border-soft);border-radius:14px;display:none;overflow:hidden;transition:border-color .2s ease}
 .weather-card.show{display:block}
@@ -292,7 +333,7 @@ body.dark .fab-menu-item:active{background:var(--card-solid)}
 .note-add-btn:active{background:var(--card-solid);border-color:var(--border)}
 
 /* ============================================================
-   ШЕСТЕРЁНКА В ПРОФИЛЕ (задача #8)
+   ШЕСТЕРЁНКА В ПРОФИЛЕ
    ============================================================ */
 .profile-settings-btn{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;background:rgba(255,154,90,.12);border:1px solid var(--border-soft);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;padding:0;font-family:inherit;-webkit-tap-highlight-color:transparent;transition:background .15s ease,color .15s ease,transform .15s ease}
 body.dark .profile-settings-btn{background:rgba(107,140,255,.15)}
@@ -301,7 +342,7 @@ body.dark .profile-settings-btn:active{background:rgba(107,140,255,.28)}
 .profile-settings-btn svg{width:18px;height:18px;display:block}
 
 /* ============================================================
-   СТРАНИЦА НАСТРОЕК (задача #8)
+   СТРАНИЦА НАСТРОЕК
    ============================================================ */
 .settings-page{position:fixed;inset:0;background:var(--bg);z-index:160;display:none;flex-direction:column;overflow:hidden}
 .settings-page.active{display:flex}
