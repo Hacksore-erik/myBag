@@ -93,7 +93,7 @@ function getCurrentTrip() {
 }
 
 function openModal(id) { resetUIBlocks(); var el = $(id); if (el) el.classList.add('active'); }
-function closeModal(id) { var el = $(id); if (el) { el.classList.remove('active'); el.classList.remove('on-top2'); } resetUIBlocks(); }
+function closeModal(id) { var el = $(id); if (el) { el.classList.remove('active'); el.classList.remove('on-top2'); el.classList.remove('above-settings'); } resetUIBlocks(); }
 
 // ============ РАБОТА С ДАННЫМИ ============
 function migrateListColors() {
