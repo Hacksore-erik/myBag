@@ -11,8 +11,8 @@ var BB_VERSION = '2.8.0';
 // enabled: false → всё работает как обычно
 var BLOCKED_CONFIG = {
     enabled: false,
-    title: 'Уважаемая Полина Деликатная,\n вы заблокированы.',
-    subtitle: 'Нам очень жаль, что вам не интересно наше приложение 😭 \nМы самоуничножимся! все! пока! 🥹',
+    title: 'Уважаемая Полина Деликатная,\nвы заблокированы.',
+    subtitle: 'Нам очень жаль, что вам не интересно наше приложение 😭',
     footer: 'myBag © 2026'
 };
 
@@ -22,14 +22,168 @@ var SWIPE_ITEM_THRESHOLD = 70;
 var WEATHER_CACHE_TTL = 1800000;
 var VIEWED_WHATS_NEW_KEY = 'bybag_viewed_whats_new_version';
 
+// ============ 20 ДОСТИЖЕНИЙ ============
 var ACHIEVEMENTS = [
-    { id: 'first_trip', icon: '🏆', name: 'Первая поездка', desc: 'Создана поездка', check: function(s) { return s.totalTrips >= 1; } },
-    { id: 'perfect', icon: '🎯', name: 'Идеальный сбор', desc: 'Собрано 100%', check: function(s) { return s.perfectTrips >= 1; } },
-    { id: 'five_trips', icon: '🔥', name: 'Опытный', desc: '5 поездок', check: function(s) { return s.totalTrips >= 5; } },
-    { id: 'hundred_items', icon: '📦', name: 'Сто вещей', desc: '100 вещей собрано', check: function(s) { return s.allDone >= 100; } },
-    { id: 'custom_list', icon: '🎨', name: 'Дизайнер', desc: 'Свой список', check: function(s) { return s.customCount >= 1; } },
-    { id: 'three_perfect', icon: '⭐', name: 'Перфекционист', desc: '3 идеальных', check: function(s) { return s.perfectTrips >= 3; } },
-    { id: 'combined', icon: '🧩', name: 'Комбинатор', desc: 'Поездка с 2+ списками', check: function(s) { return s.combinedTrips >= 1; } }
+    // ---- Поездки ----
+    {
+        id: 'first_trip', icon: '🏆', name: 'Первая поездка',
+        desc: 'Создана поездка', max: 1, unit: 'поездка',
+        fullDesc: 'С первой поездкой! Вы сделали первый шаг в мир путешествий и теперь знаете, как собрать багаж без стресса.',
+        getProgress: function(s) { return Math.min(s.totalTrips, 1); },
+        check: function(s) { return s.totalTrips >= 1; }
+    },
+    {
+        id: 'five_trips', icon: '🔥', name: 'Опытный',
+        desc: '5 поездок', max: 5, unit: 'поездка',
+        fullDesc: 'Вы настоящий путешественник! Создайте 5 поездок и докажите, что готовы к любым приключениям.',
+        getProgress: function(s) { return Math.min(s.totalTrips, 5); },
+        check: function(s) { return s.totalTrips >= 5; }
+    },
+    {
+        id: 'ten_trips', icon: '🚀', name: 'Бывалый',
+        desc: '10 поездок', max: 10, unit: 'поездка',
+        fullDesc: 'Десять поездок за плечами! Вы — настоящий профессионал сборов.',
+        getProgress: function(s) { return Math.min(s.totalTrips, 10); },
+        check: function(s) { return s.totalTrips >= 10; }
+    },
+    {
+        id: 'legend', icon: '👑', name: 'Легенда',
+        desc: '25 поездок', max: 25, unit: 'поездка',
+        fullDesc: 'Двадцать пять поездок! Ваш опыт бесценен, а багаж всегда собран идеально.',
+        getProgress: function(s) { return Math.min(s.totalTrips, 25); },
+        check: function(s) { return s.totalTrips >= 25; }
+    },
+    {
+        id: 'keeper', icon: '📜', name: 'Хранитель',
+        desc: '5 завершённых поездок', max: 5, unit: 'завершённая поездка',
+        fullDesc: 'Пять завершённых поездок! Ваша история путешествий растёт и вдохновляет.',
+        getProgress: function(s) { return Math.min(s.completedTrips, 5); },
+        check: function(s) { return s.completedTrips >= 5; }
+    },
+
+    // ---- Идеальные сборы ----
+    {
+        id: 'perfect', icon: '🎯', name: 'Идеальный сбор',
+        desc: 'Собрано 100%', max: 1, unit: 'идеальный сбор',
+        fullDesc: 'Все вещи на месте! Соберите 100% вещей в поездке и получите значок педанта.',
+        getProgress: function(s) { return Math.min(s.perfectTrips, 1); },
+        check: function(s) { return s.perfectTrips >= 1; }
+    },
+    {
+        id: 'three_perfect', icon: '⭐', name: 'Перфекционист',
+        desc: '3 идеальных сбора', max: 3, unit: 'идеальный сбор',
+        fullDesc: 'Три идеально собранных поездки! Ни одна вещь не забыта, ни один пункт не пропущен.',
+        getProgress: function(s) { return Math.min(s.perfectTrips, 3); },
+        check: function(s) { return s.perfectTrips >= 3; }
+    },
+
+    // ---- Вещи ----
+    {
+        id: 'hundred_items', icon: '📦', name: 'Сто вещей',
+        desc: '100 вещей собрано', max: 100, unit: 'вещь',
+        fullDesc: 'Сто вещей собрано! Ваш багаж всегда в порядке, а память не подводит.',
+        getProgress: function(s) { return Math.min(s.allDone, 100); },
+        check: function(s) { return s.allDone >= 100; }
+    },
+    {
+        id: 'master_bag', icon: '💎', name: 'Мастер багажа',
+        desc: '500 вещей собрано', max: 500, unit: 'вещь',
+        fullDesc: '500 вещей собрано! Ваш багаж — образец дисциплины и порядка.',
+        getProgress: function(s) { return Math.min(s.allDone, 500); },
+        check: function(s) { return s.allDone >= 500; }
+    },
+
+    // ---- Списки ----
+    {
+        id: 'custom_list', icon: '🎨', name: 'Дизайнер',
+        desc: 'Свой список', max: 1, unit: 'свой список',
+        fullDesc: 'Создайте свой собственный список вещей — и путешествуйте по своим правилам.',
+        getProgress: function(s) { return Math.min(s.customCount, 1); },
+        check: function(s) { return s.customCount >= 1; }
+    },
+    {
+        id: 'five_lists', icon: '🗂', name: 'Коллекционер',
+        desc: '5 своих списков', max: 5, unit: 'список',
+        fullDesc: 'Пять своих списков! У вас есть готовый набор для любой поездки.',
+        getProgress: function(s) { return Math.min(s.customCount, 5); },
+        check: function(s) { return s.customCount >= 5; }
+    },
+    {
+        id: 'combined', icon: '🧩', name: 'Комбинатор',
+        desc: 'Поездка с 2+ списками', max: 1, unit: 'поездка',
+        fullDesc: 'Объедините несколько списков в одной поездке — и получите максимум пользы от myBag.',
+        getProgress: function(s) { return Math.min(s.combinedTrips, 1); },
+        check: function(s) { return s.combinedTrips >= 1; }
+    },
+
+    // ---- География ----
+    {
+        id: 'geographer', icon: '🗺', name: 'Географ',
+        desc: '5 разных городов', max: 5, unit: 'город',
+        fullDesc: 'Пять разных городов! Ваша карта путешествий расширяется — вперёд к новым местам!',
+        getProgress: function(s) { return Math.min(s.uniqueCities, 5); },
+        check: function(s) { return s.uniqueCities >= 5; }
+    },
+    {
+        id: 'cosmopolitan', icon: '🌍', name: 'Космополит',
+        desc: '10 разных городов', max: 10, unit: 'город',
+        fullDesc: 'Десять городов! Вы — настоящий гражданин мира, всегда в пути.',
+        getProgress: function(s) { return Math.min(s.uniqueCities, 10); },
+        check: function(s) { return s.uniqueCities >= 10; }
+    },
+
+    // ---- Бронь ----
+    {
+        id: 'booker', icon: '🏨', name: 'Бронировщик',
+        desc: 'Сохранена бронь отеля', max: 1, unit: 'бронь',
+        fullDesc: 'Сохраните информацию об отеле — чтобы адрес, телефон и бронь всегда были под рукой.',
+        getProgress: function(s) { return Math.min(s.hasBooking, 1); },
+        check: function(s) { return s.hasBooking >= 1; }
+    },
+    {
+        id: 'pilot', icon: '✈️', name: 'Лётчик',
+        desc: 'Сохранён номер рейса', max: 1, unit: 'рейс',
+        fullDesc: 'Укажите номер рейса — и будьте готовы к полёту. Небо ждёт!',
+        getProgress: function(s) { return Math.min(s.hasFlight, 1); },
+        check: function(s) { return s.hasFlight >= 1; }
+    },
+    {
+        id: 'in_touch', icon: '📞', name: 'На связи',
+        desc: 'Сохранён телефон отеля', max: 1, unit: 'телефон',
+        fullDesc: 'Сохраните телефон отеля. Один тап — и вы всегда на связи.',
+        getProgress: function(s) { return Math.min(s.hasPhone, 1); },
+        check: function(s) { return s.hasPhone >= 1; }
+    },
+    {
+        id: 'navigator', icon: '📍', name: 'Штурман',
+        desc: 'Сохранён адрес отеля', max: 1, unit: 'адрес',
+        fullDesc: 'Сохраните адрес отеля. Никогда не заблудитесь в новом городе.',
+        getProgress: function(s) { return Math.min(s.hasAddress, 1); },
+        check: function(s) { return s.hasAddress >= 1; }
+    },
+    {
+        id: 'planner', icon: '📅', name: 'Планировщик',
+        desc: 'Поездка с датами', max: 1, unit: 'поездка',
+        fullDesc: 'Укажите даты поездки. Так вы точно ничего не забудете и всё успеете.',
+        getProgress: function(s) { return Math.min(s.hasDates, 1); },
+        check: function(s) { return s.hasDates >= 1; }
+    },
+
+    // ---- Заметки ----
+    {
+        id: 'note_taker', icon: '📝', name: 'Заметливый',
+        desc: '5 заметок', max: 5, unit: 'заметка',
+        fullDesc: 'Запишите 5 заметок о поездке — Wi-Fi, коды, важные телефоны. Всё в одном месте.',
+        getProgress: function(s) { return Math.min(s.totalNotes, 5); },
+        check: function(s) { return s.totalNotes >= 5; }
+    },
+    {
+        id: 'writer', icon: '✍️', name: 'Писатель',
+        desc: '20 заметок', max: 20, unit: 'заметка',
+        fullDesc: 'Двадцать заметок! Ваш опыт путешественника теперь задокументирован.',
+        getProgress: function(s) { return Math.min(s.totalNotes, 20); },
+        check: function(s) { return s.totalNotes >= 20; }
+    }
 ];
 
 var DEFAULT_TYPES = {
@@ -198,6 +352,7 @@ var DEFAULT_LISTS = [
         ]
     }
 ];
+
 var COLOR_PALETTES = [
     { c1: '#ffb347', c2: '#ff7e5f', ring: '#ff7e5f' },
     { c1: '#c084fc', c2: '#7e5bef', ring: '#7e5bef' },
@@ -274,6 +429,7 @@ var WHATS_NEW = {
         { icon: '🎠', title: 'Переключение поездок', desc: 'Листайте активные поездки прямо на вкладке «Поездка»' },
         { icon: '📊', title: 'Компактный виджет', desc: 'Сводка о поездке — прогресс, даты и отсчёт — в одной карточке' },
         { icon: '⚙️', title: 'Настройки отдельно', desc: 'Шестерёнка в профиле — все настройки в одном месте' },
+        { icon: '🏆', title: '20 достижений', desc: 'Собирайте награды за поездки, города, брони и заметки' },
         { icon: '🧹', title: 'Стало проще', desc: 'Убрали лишнее — приложение работает быстрее и понятнее' }
     ],
     minor: 'Спасибо, что пользуетесь myBag 💛'
