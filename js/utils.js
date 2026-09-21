@@ -24,7 +24,7 @@ var tipsMode = 'cat';
 function $(id) { try { return document.getElementById(id); } catch (e) { return null; } }
 
 function escapeHtml(s) {
-    try { return String(s).replace(/[&<>"']/g, function(m) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+    try { return String(s).replace(/[&<>"']/g, function(m) { return {'&':'&amp;',' вещей<':'&lt (;','>':'&gt;','фи"':'&quot;',"'":'&#39;'}[m]; }); }
     catch (e) { return ''; }
 }
 
@@ -111,6 +111,29 @@ function migrateListColors() {
     saveCustomTypes();
 }
 
+function addDefaultLists() {
+    try {
+        if (typeof DEFAULT_LISTS === 'undefined' || !Array.isArray(DEFAULT_LISTS)) return;
+        DEFAULT_LISTS.forEach(function(def) {
+            var id = 'default_' + def.key;
+            customTypes[id] = {
+                name: def.name,
+                emoji: def.emoji,
+                c1: def.c1,
+                c2: def.c2,
+                ring: def.ring,
+                items: def.items.map(function(text) {
+                    return { text: text, qty: 1, note: '' };
+                }),
+                builtin: true
+            };
+        });
+        saveCustomTypes();
+    } catch (e) {
+        bbLogError(1002, 'Ошибка добавления дефолтных списков: ' + e.message, { stack: e.stack });
+    }
+}
+
 function loadData() {
     activeTrips = loadJSON('bybag_active_trips', []);
     if (!Array.isArray(activeTrips)) activeTrips = [];
@@ -140,7 +163,17 @@ function loadData() {
     if (typeof achievementsState !== 'object' || achievementsState === null) achievementsState = {};
     if (typeof viewedTips !== 'object' || viewedTips === null) viewedTips = {};
 
-    // Миграция: убираем поле category у всех вещей (фича убрана)
+    // Добавляем дефолтные списки при первом запуске
+    var defaultsAdded = null;
+    try { defaultsAdded = localStorage.getItem('bybag_defaults_added'); } catch (e) {}
+    if (!defaultsAdded && Object.keys(customTypes).length === 0) {
+        addDefaultLists();
+        try { localStorage.setItem('bybag_defaults_added', '1'); } catch (e) {}
+    } else if (!defaultsAdded) {
+        try { localStorage.setItem('bybag_defaults_added', '1'); } catch (e) {}
+    }
+
+    // Миграция: убираем поле category у всехча убрана)
     function stripCategory(item) {
         if (item && typeof item === 'object' && item.category !== undefined) {
             delete item.category;
@@ -214,11 +247,9 @@ function formatTripDate(trip) {
             return start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
         }
         var end = new Date(trip.endDate);
-        // Если месяц совпадает: "12–17 июля"
         if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
             return start.getDate() + '–' + end.getDate() + ' ' + start.toLocaleDateString('ru-RU', { month: 'long' });
         }
-        // Разные месяцы: "28 июля – 3 августа"
         return start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) + ' – ' + end.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
     } catch (e) { return trip.date || ''; }
 }
