@@ -185,7 +185,18 @@ function loadData() {
     activeTrips = activeTrips.filter(function(t) { return t && typeof t === 'object'; });
     activeTrips.forEach(function(t) {
         if (!Array.isArray(t.items)) t.items = [];
-        t.items = t.items.map(function(i) { return stripCategory(normalizeItem(i)); });
+        t.items = t.items.map(function(i) {
+    var n = stripCategory(normalizeItem(i));
+    // Миграция: восстанавливаем listIds из from (если пусто)
+    if ((!n.listIds || !n.listIds.length) && n.from && t.sources && t.sources.length) {
+        t.sources.forEach(function(s) {
+            if (s.name === n.from) {
+                n.listIds = [s.id];
+            }
+        });
+    }
+    return n;
+});
         if (!t.daysCount) t.daysCount = 3;
         if (!t.info) t.info = {};
         if (!Array.isArray(t.notes)) t.notes = [];
