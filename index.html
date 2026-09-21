@@ -33,6 +33,7 @@
         <div class="blocked-footer" id="blockedFooter"></div>
     </div>
 </div>
+
 <div id="errorScreen">
     <div class="err-icon">😕</div>
     <div class="err-code" id="errCode">Код: BB-9001</div>
@@ -93,7 +94,10 @@
             <div class="profile-stat-card"><div class="ps-icon">✅</div><div class="ps-num" id="profileCompletedTrips">0</div><div class="ps-label">Завершено</div></div>
             <div class="profile-stat-card"><div class="ps-icon">📦</div><div class="ps-num" id="profileItemsPacked">0</div><div class="ps-label">Вещей собрано</div></div>
         </div>
-        <div class="stats-title">Достижения</div>
+        <div class="achievements-header">
+            <div class="stats-title" style="margin-bottom:0">Достижения</div>
+            <div class="ach-counter" id="achCounter">0 из 20</div>
+        </div>
         <div class="achievements-grid" id="achievementsGrid"></div>
         <input type="file" id="importDataFile" accept="application/json,.json" style="display:none">
 
@@ -187,6 +191,23 @@
             <span class="fab-icon-plus">+</span>
             <span class="fab-icon-close">✕</span>
         </button>
+    </div>
+</div>
+
+<!-- ============ BOTTOM SHEET: ДОСТИЖЕНИЕ ============ -->
+<div class="ach-sheet-overlay" id="achievementSheet">
+    <div class="ach-sheet-backdrop" onclick="closeAchievementSheet()"></div>
+    <div class="ach-sheet">
+        <div class="ach-sheet-handle"></div>
+        <div class="ach-sheet-icon" id="achSheetIcon">🏆</div>
+        <div class="ach-sheet-name" id="achSheetName">Достижение</div>
+        <div class="ach-sheet-divider"></div>
+        <div class="ach-sheet-desc" id="achSheetDesc"></div>
+        <div class="ach-sheet-progress-label" id="achSheetProgress">Сейчас: 0 из 1</div>
+        <div class="ach-sheet-bar">
+            <div class="ach-sheet-fill" id="achSheetBar" style="width:0%"></div>
+        </div>
+        <div class="ach-sheet-remain" id="achSheetRemain">Осталось: 1</div>
     </div>
 </div>
 
