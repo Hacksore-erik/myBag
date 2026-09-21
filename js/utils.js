@@ -38,17 +38,18 @@ function plural(n, one, few, many) {
 function getType(id) { return DEFAULT_TYPES[id] || customTripTypes[id] || null; }
 
 function normalizeItem(i) {
-    if (!i) return { text: 'Без названия', qty: 1, note: '', from: '' };
-    if (typeof i === 'string') return { text: i, qty: 1, note: '', from: '' };
-    if (typeof i !== 'object') return { text: String(i), qty: 1, note: '', from: '' };
+    if (!i) return { text: 'Без названия', qty: 1, note: '', from: '', done: false, listIds: [] };
+    if (typeof i === 'string') return { text: i, qty: 1, note: '', from: '', done: false, listIds: [] };
+    if (typeof i !== 'object') return { text: String(i), qty: 1, note: '', from: '', done: false, listIds: [] };
     return {
         text: typeof i.text === 'string' ? i.text : String(i.text || 'Без названия'),
         qty: typeof i.qty === 'number' && i.qty > 0 ? i.qty : 1,
         note: typeof i.note === 'string' ? i.note : '',
-        from: typeof i.from === 'string' ? i.from : ''
+        from: typeof i.from === 'string' ? i.from : '',
+        done: i.done === true,
+        listIds: Array.isArray(i.listIds) ? i.listIds.slice() : []
     };
 }
-
 function vibrate() { try { if (settings.vibrate && navigator.vibrate) navigator.vibrate(8); } catch (e) {} }
 function vibrateStrong() { try { if (settings.vibrate && navigator.vibrate) navigator.vibrate([10,40,10]); } catch (e) {} }
 
